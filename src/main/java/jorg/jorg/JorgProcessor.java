@@ -11,8 +11,7 @@ public class JorgProcessor implements IntProcessor {
     private static final Xkey terminatorXkey = new Xkey(Jorg.terminator, null, true);
 
     enum State {
-        AT, FROM_NODE, DIRECT, AFTER_DIRECT, VIA_NODE,
-        AFTER_VIA_NODE, TO_NODE, AFTER_TO_NODE
+        AT, FROM, DIRECT, POST_DIRECT, VIA, POST_VIA, TO, POST_TO
     }
 
     enum DataState {
@@ -20,7 +19,7 @@ public class JorgProcessor implements IntProcessor {
     }
 
     enum OddStringState {
-        OPEN_TAG, CONTENT, CLOSE_TAG
+        OPEN, CONTENT, CLOSE
     }
 
     private Subject keys;
@@ -30,6 +29,7 @@ public class JorgProcessor implements IntProcessor {
     private Xkey from;
     private Xkey via;
     private Xkey to;
+
     private boolean lastEscapeCharacter;
     private OddStringState oddStringState;
     private String tag;
@@ -46,7 +46,7 @@ public class JorgProcessor implements IntProcessor {
         resetDataBuilder();
         state = switch (i) {
             case ']' -> State.DIRECT;
-            case '[' -> State.VIA_NODE;
+            case '[' -> State.VIA;
             case '#' -> State.AT;
             default -> throw new ProcessorException();
         };
@@ -56,7 +56,15 @@ public class JorgProcessor implements IntProcessor {
         dataState = DataState.PENDING;
         resetDataBuilder();
         state = switch (i) {
-            case ']' -> State.TO_NODE;
+            case ']' -> State.TO;
+            case '[' -> {
+                from.set(via, nullXkey);
+                yield State.VIA;
+            }
+            case '#' -> {
+                from.set(via, nullXkey);
+                yield State.AT;
+            }
             default -> throw new ProcessorException();
         };
     }
@@ -66,45 +74,13 @@ public class JorgProcessor implements IntProcessor {
         dataState = DataState.PENDING;
         resetDataBuilder();
         state = switch (i) {
-            case '[' -> State.VIA_NODE;
+            case '[' -> State.VIA;
             case ']' -> State.DIRECT;
             case '#' -> State.AT;
             default -> throw new ProcessorException();
         };
     }
 
-    private void pendingDataState(int i) throws ProcessorException {
-        if(Character.isJavaIdentifierStart(i)) {
-            dataState = DataState.HUMBLE_STRING;
-            dataBuilder.appendCodePoint(i);
-        } else if(i == '#') {
-            dataState = DataState.REFERENCE;
-        } else if(i == '"') {
-            dataState = DataState.STRING;
-        } else if(Character.isDigit(i)) {
-            dataState = DataState.NUMBER;
-            dataBuilder.appendCodePoint(i);
-        } else if(i == '.') {
-            dataState = DataState.DOUBLE;
-            dataBuilder.append("0.");
-        } else if(i == ',') {
-            dataState = DataState.FLOAT;
-            dataBuilder.append("0.");
-        } else if(i == '-') {
-            dataState = DataState.MINUS;
-        } else if(i == '+') {
-            dataState = DataState.PLUS;
-        } else if(i == '@') {
-            dataState = DataState.ODD_STRING;
-            oddStringState = OddStringState.OPEN_TAG;
-            tagBuilder = new StringBuilder();
-        } else if(isEscapeCharacter(i)) {
-            dataState = DataState.HUMBLE_STRING;
-            lastEscapeCharacter = true;
-        } else if(!Character.isWhitespace(i)){
-            throw new ProcessorException("Invalid input");
-        }
-    }
 
     public static boolean isControlCharacter(int codePoint) {
         return codePoint == ']' || codePoint == '#' || codePoint == '[';
@@ -119,6 +95,7 @@ public class JorgProcessor implements IntProcessor {
         keys = Suite.set();
         Reference zero = new Reference("0", true);
         from = new Xkey(null, zero, false);
+        via = to = null;
         keys.set(zero, from);
         state = State.DIRECT;
         dataState = DataState.PENDING;
@@ -130,7 +107,7 @@ public class JorgProcessor implements IntProcessor {
         switch (state) {
             case AT:
                 if(i == '[') {
-                    state = State.FROM_NODE;
+                    state = State.FROM;
                     dataState = DataState.PENDING;
                     resetDataBuilder();
                 } else if(i == ']') {
@@ -141,7 +118,7 @@ public class JorgProcessor implements IntProcessor {
                 }
                 break;
 
-            case FROM_NODE:
+            case FROM:
                 if(lastEscapeCharacter) {
                     dataBuilder.appendCodePoint(i);
                     lastEscapeCharacter = false;
@@ -155,7 +132,7 @@ public class JorgProcessor implements IntProcessor {
                     resetDataBuilder();
                     state = switch (i) {
                         case ']' -> State.DIRECT;
-                        case '[' -> State.VIA_NODE;
+                        case '[' -> State.VIA;
                         case '#' -> State.AT;
                         default -> throw new ProcessorException();
                     };
@@ -194,12 +171,16 @@ public class JorgProcessor implements IntProcessor {
                             lastEscapeCharacter = true;
                         } else if(i == '@') {
                             dataState = DataState.ODD_STRING;
-                            oddStringState = OddStringState.OPEN_TAG;
+                            oddStringState = OddStringState.OPEN;
                             tagBuilder = new StringBuilder();
                         } else if(i == '[') {
-                            state = State.VIA_NODE;
+                            state = State.VIA;
                         } else if(i == ']') {
-                            from.add(nullXkey);
+                            if(to != null || via != null) {
+                                from.add(nullXkey);
+                            } else {
+                                to = nullXkey;
+                            }
                         } else if(!Character.isWhitespace(i)) {
                                 throw new ProcessorException("Invalid input");
                         }
@@ -228,10 +209,9 @@ public class JorgProcessor implements IntProcessor {
                             String string = dataBuilder.toString().trim();
                             if (string.isEmpty()) {
                                 if (i == '[') {
-                                    state = State.FROM_NODE;
+                                    state = State.FROM;
                                 } else if(i == ']') {
-                                    to = nullXkey;
-                                    directFinish(i);
+                                    from.add(nullXkey);
                                     to = terminatorXkey;
                                     directFinish(i);
                                 } else {
@@ -259,7 +239,7 @@ public class JorgProcessor implements IntProcessor {
                             from.add(to);
                             dataState = DataState.PENDING;
                             resetDataBuilder();
-                            state = State.AFTER_DIRECT;
+                            state = State.POST_DIRECT;
                         } else if(isEscapeCharacter(i)) {
                             lastEscapeCharacter = true;
                         } else {
@@ -269,7 +249,7 @@ public class JorgProcessor implements IntProcessor {
 
                     case ODD_STRING:
                         switch (oddStringState) {
-                            case OPEN_TAG -> {
+                            case OPEN -> {
                                 if(i == '"') {
                                     tag = tagBuilder.toString();
                                     oddStringState = OddStringState.CONTENT;
@@ -285,16 +265,16 @@ public class JorgProcessor implements IntProcessor {
                                         from.add(to);
                                         dataState = DataState.PENDING;
                                         resetDataBuilder();
-                                        state = State.AFTER_DIRECT;
+                                        state = State.POST_DIRECT;
                                     } else {
-                                        oddStringState = OddStringState.CLOSE_TAG;
+                                        oddStringState = OddStringState.CLOSE;
                                         tagBuilder = new StringBuilder();
                                     }
                                 } else {
                                     dataBuilder.appendCodePoint(i);
                                 }
                             }
-                            case CLOSE_TAG -> {
+                            case CLOSE -> {
                                 tagBuilder.appendCodePoint(i);
                                 if(tagBuilder.length() == tag.length()) {
                                     if(tagBuilder.toString().equals(tag)) {
@@ -303,7 +283,7 @@ public class JorgProcessor implements IntProcessor {
                                         from.add(to);
                                         dataState = DataState.PENDING;
                                         resetDataBuilder();
-                                        state = State.AFTER_DIRECT;
+                                        state = State.POST_DIRECT;
                                     } else {
                                         dataBuilder.append(tagBuilder);
                                         oddStringState = OddStringState.CONTENT;
@@ -393,21 +373,21 @@ public class JorgProcessor implements IntProcessor {
                 }
                 break;
 
-            case AFTER_DIRECT:
+            case POST_DIRECT:
                 state = switch (i) {
                     case ']' -> State.DIRECT;
-                    case '[' -> State.VIA_NODE;
+                    case '[' -> State.VIA;
                     case '#' -> State.AT;
                     default -> {
                         if(Character.isWhitespace(i)){
-                            yield State.AFTER_DIRECT;
+                            yield State.POST_DIRECT;
                         }
                         throw new ProcessorException();
                     }
                 };
                 break;
 
-            case VIA_NODE:
+            case VIA:
                 switch (dataState) {
                     case PENDING:
                         if(Character.isJavaIdentifierStart(i)) {
@@ -435,7 +415,7 @@ public class JorgProcessor implements IntProcessor {
                             lastEscapeCharacter = true;
                         } else if(i == '@') {
                             dataState = DataState.ODD_STRING;
-                            oddStringState = OddStringState.OPEN_TAG;
+                            oddStringState = OddStringState.OPEN;
                             tagBuilder = new StringBuilder();
                         } else if(i == ']') {
                             via = nullXkey;
@@ -467,7 +447,15 @@ public class JorgProcessor implements IntProcessor {
                         } else if(isControlCharacter(i)) {
                             String string = dataBuilder.toString().trim();
                             if(string.isEmpty()) {
-                                throw new ProcessorException();
+                                if (i == '[') {
+                                    from.set(nullXkey, nullXkey);
+                                    state = State.FROM;
+                                } else if(i == ']') {
+                                    to = terminatorXkey;
+                                    directFinish(i);
+                                } else {
+                                    throw new ProcessorException();
+                                }
                             } else {
                                 Reference reference = new Reference(string);
                                 via = keys.getSaved(reference, new Xkey(null, reference, false)).asExpected();
@@ -489,7 +477,7 @@ public class JorgProcessor implements IntProcessor {
                             via = keys.getSaved(string, new Xkey(string, null, true)).asExpected();
                             dataState = DataState.PENDING;
                             resetDataBuilder();
-                            state = State.AFTER_VIA_NODE;
+                            state = State.POST_VIA;
                         } else if(isEscapeCharacter(i)) {
                             lastEscapeCharacter = true;
                         } else {
@@ -499,7 +487,7 @@ public class JorgProcessor implements IntProcessor {
 
                     case ODD_STRING:
                         switch (oddStringState) {
-                            case OPEN_TAG -> {
+                            case OPEN -> {
                                 if(i == '"') {
                                     tag = tagBuilder.toString();
                                     oddStringState = OddStringState.CONTENT;
@@ -514,16 +502,16 @@ public class JorgProcessor implements IntProcessor {
                                         via = keys.getSaved(string, new Xkey(string, null, true)).asExpected();
                                         dataState = DataState.PENDING;
                                         resetDataBuilder();
-                                        state = State.AFTER_VIA_NODE;
+                                        state = State.POST_VIA;
                                     } else {
-                                        oddStringState = OddStringState.CLOSE_TAG;
+                                        oddStringState = OddStringState.CLOSE;
                                         tagBuilder = new StringBuilder();
                                     }
                                 } else {
                                     dataBuilder.appendCodePoint(i);
                                 }
                             }
-                            case CLOSE_TAG -> {
+                            case CLOSE -> {
                                 tagBuilder.appendCodePoint(i);
                                 if(tagBuilder.length() == tag.length()) {
                                     if(tagBuilder.toString().equals(tag)) {
@@ -531,7 +519,7 @@ public class JorgProcessor implements IntProcessor {
                                         via = keys.getSaved(string, new Xkey(string, null, true)).asExpected();
                                         dataState = DataState.PENDING;
                                         resetDataBuilder();
-                                        state = State.AFTER_VIA_NODE;
+                                        state = State.POST_VIA;
                                     } else {
                                         dataBuilder.append(tagBuilder);
                                         oddStringState = OddStringState.CONTENT;
@@ -622,24 +610,48 @@ public class JorgProcessor implements IntProcessor {
                 }
                 break;
 
-            case AFTER_VIA_NODE:
-                state = switch (i) {
-                    case ']' -> State.TO_NODE;
-                    case '[' -> throw new ProcessorException();
-                    case '#' -> throw new ProcessorException();
-                    default -> {
-                        if(Character.isWhitespace(i)){
-                            yield State.AFTER_VIA_NODE;
-                        }
-                        throw new ProcessorException();
-                    }
-                };
+            case POST_VIA:
+                if(!Character.isWhitespace(i)) {
+                    viaFinish(i);
+                }
                 break;
 
-            case TO_NODE:
+            case TO:
                 switch (dataState) {
                     case PENDING:
-                        pendingDataState(i);
+                        if(Character.isJavaIdentifierStart(i)) {
+                            dataState = DataState.HUMBLE_STRING;
+                            dataBuilder.appendCodePoint(i);
+                        } else if(i == '#') {
+                            dataState = DataState.REFERENCE;
+                        } else if(i == '"') {
+                            dataState = DataState.STRING;
+                        } else if(Character.isDigit(i)) {
+                            dataState = DataState.NUMBER;
+                            dataBuilder.appendCodePoint(i);
+                        } else if(i == '.') {
+                            dataState = DataState.DOUBLE;
+                            dataBuilder.append("0.");
+                        } else if(i == ',') {
+                            dataState = DataState.FLOAT;
+                            dataBuilder.append("0.");
+                        } else if(i == '-') {
+                            dataState = DataState.MINUS;
+                        } else if(i == '+') {
+                            dataState = DataState.PLUS;
+                        } else if(i == '@') {
+                            dataState = DataState.ODD_STRING;
+                            oddStringState = OddStringState.OPEN;
+                            tagBuilder = new StringBuilder();
+                        } else if(i == '[' || i == ']') {
+                            to = nullXkey;
+                            toFinish(i);
+                        } else if(isEscapeCharacter(i)) {
+                            dataState = DataState.HUMBLE_STRING;
+                            lastEscapeCharacter = true;
+                        } else if(!Character.isWhitespace(i)){
+                            throw new ProcessorException("Invalid input");
+                        }
                         break;
 
                     case HUMBLE_STRING:
@@ -664,7 +676,16 @@ public class JorgProcessor implements IntProcessor {
                         } else if(isControlCharacter(i)) {
                             String string = dataBuilder.toString().trim();
                             if(string.isEmpty()) {
-                                throw new ProcessorException();
+                                if (i == '[') {
+                                    from.set(via, nullXkey);
+                                    state = State.FROM;
+                                } else if(i == ']') {
+                                    from.set(via, nullXkey);
+                                    to = terminatorXkey;
+                                    directFinish(i);
+                                } else {
+                                    throw new ProcessorException();
+                                }
                             } else {
                                 Reference reference = new Reference(string);
                                 to = keys.getSaved(reference, new Xkey(null, reference, false)).asExpected();
@@ -684,10 +705,7 @@ public class JorgProcessor implements IntProcessor {
                         } else if(i == '"') {
                             String string = dataBuilder.toString();
                             to = keys.getSaved(string, new Xkey(string, null, true)).asExpected();
-                            from.set(via, to);
-                            dataState = DataState.PENDING;
-                            resetDataBuilder();
-                            state = State.AFTER_TO_NODE;
+                            state = State.POST_TO;
                         } else if(isEscapeCharacter(i)) {
                             lastEscapeCharacter = true;
                         } else {
@@ -697,7 +715,7 @@ public class JorgProcessor implements IntProcessor {
 
                     case ODD_STRING:
                         switch (oddStringState) {
-                            case OPEN_TAG -> {
+                            case OPEN -> {
                                 if(i == '"') {
                                     tag = tagBuilder.toString();
                                     oddStringState = OddStringState.CONTENT;
@@ -710,28 +728,22 @@ public class JorgProcessor implements IntProcessor {
                                     if(tag.isEmpty()) {
                                         String string = dataBuilder.toString();
                                         to = keys.getSaved(string, new Xkey(string, null, true)).asExpected();
-                                        from.set(via, to);
-                                        dataState = DataState.PENDING;
-                                        resetDataBuilder();
-                                        state = State.AFTER_TO_NODE;
+                                        state = State.POST_TO;
                                     } else {
-                                        oddStringState = OddStringState.CLOSE_TAG;
+                                        oddStringState = OddStringState.CLOSE;
                                         tagBuilder = new StringBuilder();
                                     }
                                 } else {
                                     dataBuilder.appendCodePoint(i);
                                 }
                             }
-                            case CLOSE_TAG -> {
+                            case CLOSE -> {
                                 tagBuilder.appendCodePoint(i);
                                 if(tagBuilder.length() == tag.length()) {
                                     if(tagBuilder.toString().equals(tag)) {
                                         String string = dataBuilder.toString();
                                         to = keys.getSaved(string, new Xkey(string, null, true)).asExpected();
-                                        from.set(via, to);
-                                        dataState = DataState.PENDING;
-                                        resetDataBuilder();
-                                        state = State.AFTER_TO_NODE;
+                                        state = State.POST_TO;
                                     } else {
                                         dataBuilder.append(tagBuilder);
                                         oddStringState = OddStringState.CONTENT;
@@ -822,18 +834,10 @@ public class JorgProcessor implements IntProcessor {
                 }
                 break;
 
-            case AFTER_TO_NODE:
-                state = switch (i) {
-                    case ']' -> State.DIRECT;
-                    case '[' -> State.VIA_NODE;
-                    case '#' -> State.AT;
-                    default -> {
-                        if(Character.isWhitespace(i)){
-                            yield State.AFTER_TO_NODE;
-                        }
-                        throw new ProcessorException();
-                    }
-                };
+            case POST_TO:
+                if(!Character.isWhitespace(i)){
+                    toFinish(i);
+                }
                 break;
         }
     }
@@ -842,7 +846,7 @@ public class JorgProcessor implements IntProcessor {
     public Subject finish() throws ProcessorException {
         String str;
         switch (state) {
-            case FROM_NODE -> {
+            case FROM -> {
                 str = dataBuilder.toString().trim();
                 if (str.isEmpty()) {
                     throw new ProcessorException();
@@ -852,7 +856,7 @@ public class JorgProcessor implements IntProcessor {
                     ((Reference) from.getLabel()).setDeclared(true);
                 }
             }
-            case DIRECT, TO_NODE -> {
+            case DIRECT, TO, POST_DIRECT, POST_TO, VIA, POST_VIA -> {
                 switch (dataState) {
                     case HUMBLE_STRING -> {
                         str = dataBuilder.toString().trim();
@@ -888,7 +892,7 @@ public class JorgProcessor implements IntProcessor {
 
                     case FLOAT -> {
                         str = dataBuilder.toString();
-                        float f = Float.parseFloat(dataBuilder.toString());
+                        float f = Float.parseFloat(str);
                         to = keys.getSaved(f, new Xkey(f, null, true)).asExpected();
                     }
 
@@ -896,11 +900,17 @@ public class JorgProcessor implements IntProcessor {
 
                     case PLUS -> to = keys.getSaved(true, new Xkey(true, null, true)).asExpected();
 
+                    case PENDING -> to = nullXkey;
+
                 }
-                if (dataState != DataState.PENDING) {
-                    if (state == State.DIRECT) from.add(to);
-                    else from.set(via, to);
-                }
+
+                    if (state == State.DIRECT || state == State.POST_DIRECT) {
+                        if (dataState != DataState.PENDING) {
+                            from.add(to);
+                        }
+                    } else if(state == State.VIA || state == State.POST_VIA) {
+                        from.set(to, nullXkey);
+                    } else from.set(via, to);
             }
         }
         return keys;

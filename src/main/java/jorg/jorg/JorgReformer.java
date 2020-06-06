@@ -136,7 +136,7 @@ public class JorgReformer {
                         Class<?> type = params.asExpected();
                         Constructor<?> c = type.getDeclaredConstructor();
                         o = c.newInstance();
-                    } else if (image.size() == 0) {
+                    } else if (image.size() == 0 && params.key().assigned(Suite.Add.class)) {
                         o = params.direct();
                     } else {
                         o = Suite.insetAll(params.front());
