@@ -1,0 +1,8 @@
+rootProject.name = 'jorg'
+
+sourceControl {
+    gitRepository(new URI("https://github.com/tost-ring/suite.git")) {
+        producesModule("lpo:suite")
+    }
+}
+
