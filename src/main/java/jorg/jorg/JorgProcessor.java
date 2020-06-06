@@ -174,6 +174,9 @@ public class JorgProcessor implements IntProcessor {
                             oddStringState = OddStringState.OPEN;
                             tagBuilder = new StringBuilder();
                         } else if(i == '[') {
+                            if(to != null || via != null) {
+                                from.add(nullXkey);
+                            }
                             state = State.VIA;
                         } else if(i == ']') {
                             if(to != null || via != null) {
@@ -905,9 +908,7 @@ public class JorgProcessor implements IntProcessor {
                 }
 
                     if (state == State.DIRECT || state == State.POST_DIRECT) {
-                        if (dataState != DataState.PENDING) {
-                            from.add(to);
-                        }
+                        from.add(to);
                     } else if(state == State.VIA || state == State.POST_VIA) {
                         from.set(to, nullXkey);
                     } else from.set(via, to);

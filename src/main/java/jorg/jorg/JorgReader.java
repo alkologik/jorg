@@ -7,48 +7,10 @@ import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 public class JorgReader {
-
-    public static<T> T read(String filePath) {
-        JorgReader reader = new JorgReader();
-        return reader.loadWell(new File(filePath)) ? reader.getObjects().get("0").asExpected() : null;
-    }
-
-    public static<T> T read(File file) {
-        JorgReader reader = new JorgReader();
-        return reader.loadWell(file) ? reader.getObjects().get("0").asExpected() : null;
-    }
-
-    public static<T> T read(InputStream inputStream) {
-        JorgReader reader = new JorgReader();
-        return reader.loadWell(inputStream) ? reader.getObjects().get("0").asExpected() : null;
-    }
-
-    public static<T> T read(String filePath, Function<Subject, Object> recipe) {
-        JorgReader reader = new JorgReader();
-        reader.reformer.setRecipe(recipe);
-        return reader.loadWell(new File(filePath)) ? reader.getObjects().get("0").asExpected() : null;
-    }
-
-    public static<T> T read(File file, Function<Subject, Object> recipe) {
-        JorgReader reader = new JorgReader();
-        reader.reformer.setRecipe(recipe);
-        return reader.loadWell(file) ? reader.getObjects().get("0").asExpected() : null;
-    }
-
-    public static<T> T read(InputStream inputStream, Function<Subject, Object> recipe) {
-        JorgReader reader = new JorgReader();
-        reader.reformer.setRecipe(recipe);
-        return reader.loadWell(inputStream) ? reader.getObjects().get("0").asExpected() : null;
-    }
-
-    public static<T> T parse(String jorg) {
-        JorgReader reader = new JorgReader();
-        InputStream inputStream = new ByteArrayInputStream(jorg.getBytes());
-        return reader.loadWell(inputStream) ? reader.getObjects().get("0").asExpected() : null;
-    }
 
     private JorgReformer reformer;
     private final Subject objects;
@@ -57,17 +19,54 @@ public class JorgReader {
         this(new JorgReformer());
     }
 
-    public JorgReformer getReformer() {
-        return reformer;
-    }
-
-    public void setReformer(JorgReformer reformer) {
-        this.reformer = reformer;
-    }
-
     public JorgReader(JorgReformer reformer) {
         this.reformer = reformer;
         objects = Suite.set();
+    }
+
+    public JorgReformer getMainReformer() {
+        return reformer;
+    }
+
+    public void setMainReformer(JorgReformer reformer) {
+        this.reformer = reformer;
+    }
+
+    public JorgReader withRecipe(Function<Subject, Object> recipe) {
+        reformer.setRecipe(recipe);
+        return this;
+    }
+
+    public JorgReader withTypedRecipe(Class<?> type, Function<Subject, Object> recipe) {
+        reformer.setTypedRecipe(type, recipe);
+        return this;
+    }
+
+    public<T> JorgReader withReformer(Class<T> type, BiConsumer<T, Subject> reformer) {
+        this.reformer.setReformer(type, reformer);
+        return this;
+    }
+
+    public JorgReader withAdapter(String s, Object o) {
+        reformer.setAdapter(s, o);
+        return this;
+    }
+
+    public<T> T read(String filePath) {
+        return loadWell(new File(filePath)) ? getObjects().get("0").asExpected() : null;
+    }
+
+    public<T> T read(File file) {
+        return loadWell(file) ? getObjects().get("0").asExpected() : null;
+    }
+
+    public<T> T read(InputStream inputStream) {
+        return loadWell(inputStream) ? getObjects().get("0").asExpected() : null;
+    }
+
+    public<T> T parse(String jorg) {
+        InputStream inputStream = new ByteArrayInputStream(jorg.getBytes());
+        return loadWell(inputStream) ? getObjects().get("0").asExpected() : null;
     }
 
     public boolean loadWell(File file) {

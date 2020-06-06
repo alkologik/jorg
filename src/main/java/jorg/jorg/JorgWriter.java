@@ -9,16 +9,16 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 public class JorgWriter {
 
     private static final int escapeCharacter = '`';
 
-    public static boolean write(Object object, String filePath) {
-        JorgWriter writer = new JorgWriter();
-        writer.objects.set("0", object);
+    public boolean write(Object object, String filePath) {
+        objects.set("0", object);
         try {
-            writer.save(new FileOutputStream(filePath));
+            save(new FileOutputStream(filePath));
         } catch (JorgWriteException | IOException e) {
             e.printStackTrace();
             return false;
@@ -26,11 +26,10 @@ public class JorgWriter {
         return true;
     }
 
-    public static boolean write(Object object, File file) {
-        JorgWriter writer = new JorgWriter();
-        writer.objects.set("0", object);
+    public boolean write(Object object, File file) {
+        objects.set("0", object);
         try {
-            writer.save(new FileOutputStream(file));
+            save(new FileOutputStream(file));
         } catch (JorgWriteException | IOException e) {
             e.printStackTrace();
             return false;
@@ -38,12 +37,11 @@ public class JorgWriter {
         return true;
     }
 
-    public static boolean write(Object object, URL url) {
-        JorgWriter writer = new JorgWriter();
-        writer.objects.set("0", object);
+    public boolean write(Object object, URL url) {
+        objects.set("0", object);
         try {
             URLConnection connection = url.openConnection();
-            writer.save(connection.getOutputStream());
+            save(connection.getOutputStream());
         } catch (IOException | JorgWriteException e) {
             e.printStackTrace();
             return false;
@@ -51,11 +49,10 @@ public class JorgWriter {
         return true;
     }
 
-    public static String encode(Object o) {
-        JorgWriter writer = new JorgWriter();
-        writer.objects.set("0", o);
+    public String encode(Object o) {
+        objects.set("0", o);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        return writer.saveWell(outputStream) ? outputStream.toString() : "";
+        return saveWell(outputStream) ? outputStream.toString() : "";
     }
 
     private final Subject objects;
@@ -74,13 +71,24 @@ public class JorgWriter {
         rootMode = true;
     }
 
-    public JorgPerformer getPerformer() {
+    public JorgPerformer getMainPerformer() {
         return performer;
     }
 
-    public void setPerformer(JorgPerformer performer) {
+    public void setMainPerformer(JorgPerformer performer) {
         this.performer = performer;
     }
+
+    public<T> JorgWriter withPerformer(Class<T> type, Function<T, Subject> performer) {
+        this.performer.setPerformer(type, performer);
+        return this;
+    }
+
+    public JorgWriter withPort(Object object, String id) {
+        performer.setPort(object, id);
+        return this;
+    }
+
 
     public boolean isCompactMode() {
         return compactMode;
@@ -149,11 +157,11 @@ public class JorgWriter {
 
         OutputStreamWriter writer = new OutputStreamWriter(output, StandardCharsets.UTF_8);
 
-        Cascade<Xray> crystals = performer.perform(objects);
+        Cascade<Xray> xrays = performer.perform(objects);
         boolean dartWritten;
 
-        for(Xray c : crystals.toEnd()) {
-            if(crystals.getFalls() > 1 || !"0".equals(c.getId()) || !rootMode) {
+        for(Xray c : xrays.toEnd()) {
+            if(xrays.getFalls() > 1 || !"0".equals(c.getId()) || !rootMode) {
                 writer.write(compactMode ? "#[" : "#[ ");
                 writer.write(c.getId());
                 writer.write(compactMode ? "]" : " ] ");
@@ -170,11 +178,19 @@ public class JorgWriter {
                 } else {
                     if(key.getObject() instanceof Suite.Add) {
                         if(!dartWritten) {
-                            writer.write(compactMode ? "]" : "\n ] ");
+                            if(compactMode) {
+                                writer.write("]");
+                            } else {
+                                if (xrays.getFalls() > 1 || !"0".equals(c.getId()) || !rootMode) {
+                                    writer.write("\n ] ");
+                                } else {
+                                    writer.write("\n] ");
+                                }
+                            }
                         }
                     } else {
                         if (!compactMode) {
-                            if (crystals.getFalls() > 1 || !"0".equals(c.getId()) || !rootMode) {
+                            if (xrays.getFalls() > 1 || !"0".equals(c.getId()) || !rootMode) {
                                 writer.write("\n ");
                             } else {
                                 writer.write("\n");

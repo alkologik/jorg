@@ -1,7 +1,9 @@
 package jorg.jorg;
 
+import suite.suite.SolidSubject;
 import suite.suite.Subject;
 import suite.suite.Suite;
+import suite.suite.action.Action;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -16,7 +18,8 @@ public class StandardPerformer {
                 set(ArrayList.class, (Function<Collection<?>, Subject>)StandardPerformer::performCollection).
                 set(HashSet.class, (Function<Collection<?>, Subject>)StandardPerformer::performCollection).
                 set(HashMap.class, (Function<Map<?, ?>, Subject>)StandardPerformer::performMap).
-                set(File.class, (Function<File, Subject>)StandardPerformer::performFile)
+                set(File.class, (Function<File, Subject>)StandardPerformer::performFile).
+                set(SolidSubject.class, (Function<Subject, Subject>)s -> s)
                 ;
     }
 
