@@ -96,7 +96,7 @@ public class JorgReformer {
             if(sub.settled()) {
                 xkey.setObject(sub.direct());
                 xkey.setConstructed(true);
-                sub.direct();
+                xkey.setReformed(true);
                 return;
 
             } else if(reference.isDeclared()) {
