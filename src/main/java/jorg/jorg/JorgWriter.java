@@ -176,7 +176,7 @@ public class JorgWriter {
                     writer.write(compactMode ? "#]" : " #\n ] ");
                     dartWritten = true;
                 } else {
-                    if(key.getObject() instanceof Suite.Add) {
+                    if(key.getObject() instanceof Suite.AutoKey) {
                         if(!dartWritten) {
                             if(compactMode) {
                                 writer.write("]");
@@ -231,7 +231,7 @@ public class JorgWriter {
             return (Boolean) object ? "+" : "-";
         } else if(object instanceof Reference) {
             return "#" + escapedHumble(((Reference) object).getId(), false);
-        } else if(object == null || object instanceof Suite.Add) {
+        } else if(object == null || object instanceof Suite.AutoKey) {
             return "";
         } else {
             throw new JorgWriteException("Unrecognized object type " + object.getClass());

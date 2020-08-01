@@ -71,7 +71,7 @@ public class Xkey {
     }
 
     public void add(Xkey xkey) {
-        image.set(new Xkey(Suite.add(), null, true), xkey);
+        image.set(new Xkey(new Suite.AutoKey(), null, true), xkey);
     }
 
     @Override

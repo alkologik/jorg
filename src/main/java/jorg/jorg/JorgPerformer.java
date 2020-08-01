@@ -102,7 +102,7 @@ public class JorgPerformer {
         if(o instanceof Class) return Xray.image(new Reference(((Class<?>) o).getName()));
         if(o instanceof Boolean || o instanceof Character || o instanceof Byte || o instanceof Short ||
                 o instanceof Integer || o instanceof Long || o instanceof Float || o instanceof Double ||
-                o instanceof String || o instanceof Suite.Add || o == Jorg.terminator) {
+                o instanceof String || o instanceof Suite.AutoKey || o == Jorg.terminator) {
             return Xray.image(o);
         }
         return null;
@@ -209,6 +209,6 @@ public class JorgPerformer {
     }
 
     private Subject addXray(Subject s, Xray x) {
-        return s.set(Xray.image(Suite.add()), x);
+        return s.set(Xray.image(new Suite.AutoKey()), x);
     }
 }

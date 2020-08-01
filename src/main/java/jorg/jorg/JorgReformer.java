@@ -34,7 +34,7 @@ public class JorgReformer {
         if(enableDefaultRecipes) {
             setRecipe(s -> {
                 var sub = s.at(0);
-                if(sub.assigned(Class.class) && sub.key().assigned(Suite.Add.class)) {
+                if(sub.assigned(Class.class) && sub.key().assigned(Suite.AutoKey.class)) {
                     Class<?> type = sub.asExpected();
                     try {
                         return type.getMethod("form", Subject.class).invoke(null, sub.frontFrom(Slot.in(1)).toSubject());
@@ -132,11 +132,11 @@ public class JorgReformer {
                 }
 
                 if(params.size() == 1) {
-                    if (params.assigned(Class.class) && params.key().assigned(Suite.Add.class)) {
+                    if (params.assigned(Class.class) && params.key().assigned(Suite.AutoKey.class)) {
                         Class<?> type = params.asExpected();
                         Constructor<?> c = type.getDeclaredConstructor();
                         o = c.newInstance();
-                    } else if (image.size() == 0 && params.key().assigned(Suite.Add.class)) {
+                    } else if (image.size() == 0 && params.key().assigned(Suite.AutoKey.class)) {
                         o = params.direct();
                     } else {
                         o = Suite.insetAll(params.front());
@@ -144,11 +144,11 @@ public class JorgReformer {
                 } else if(params.size() == 2) {
                     var p0 = params.at(0);
                     var p1 = params.at(1);
-                    if(p0.assigned(Class.class) && p0.key().assigned(Suite.Add.class) &&
-                            p1.assigned(Integer.class) && p1.key().assigned(Suite.Add.class)) {
+                    if(p0.assigned(Class.class) && p0.key().assigned(Suite.AutoKey.class) &&
+                            p1.assigned(Integer.class) && p1.key().assigned(Suite.AutoKey.class)) {
                         o = Array.newInstance(p0.asExpected(), p1.asInt());
-                    } else if(p0.assigned(Class.class) && p0.key().assigned(Suite.Add.class) &&
-                            p1.assigned(Boolean.class) && p1.key().assigned(Suite.Add.class)) {
+                    } else if(p0.assigned(Class.class) && p0.key().assigned(Suite.AutoKey.class) &&
+                            p1.assigned(Boolean.class) && p1.key().assigned(Suite.AutoKey.class)) {
                         o = Array.newInstance(p0.asExpected(), image.size());
                     } else {
                         o = Suite.insetAll(params.front());
