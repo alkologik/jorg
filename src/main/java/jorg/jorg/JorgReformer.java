@@ -37,7 +37,7 @@ public class JorgReformer {
                 if(sub.assigned(Class.class) && sub.key().assigned(Suite.AutoKey.class)) {
                     Class<?> type = sub.asExpected();
                     try {
-                        return type.getMethod("form", Subject.class).invoke(null, sub.frontFrom(Slot.in(1)).toSubject());
+                        return type.getMethod("form", Subject.class).invoke(null, sub.frontFrom(Slot.in(1)).set());
                     } catch (Exception e) {
                         return null;
                     }
@@ -182,8 +182,8 @@ public class JorgReformer {
                 o instanceof Integer || o instanceof Long || o instanceof Float || o instanceof Double ||
                 o instanceof String || o instanceof Class) return;
 
-        Subject params = xkey.getImage().front().advance(
-                s -> Suite.set(s.key().asGiven(Xkey.class).getObject(), s.asGiven(Xkey.class).getObject())).toSubject();
+        Subject params = xkey.getImage().front().map(
+                s -> Suite.set(s.key().asGiven(Xkey.class).getObject(), s.asGiven(Xkey.class).getObject())).set();
 
         if(o instanceof Reformable) {
             ((Reformable) o).reform(params);
@@ -287,7 +287,7 @@ public class JorgReformer {
             var recipe = typedRecipes.get(type);
             if(recipe.settled()) {
                 Function<Subject, ?> function = recipe.asExpected();
-                return function.apply(s.frontFrom(Slot.in(1)).toSubject());
+                return function.apply(s.frontFrom(Slot.in(1)).set());
             }
         }
         return null;
