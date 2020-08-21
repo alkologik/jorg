@@ -167,7 +167,7 @@ public class JorgWriter {
                 writer.write(compactMode ? "]" : " ] ");
             }
             dartWritten = true;
-            Cascade<Subject> cascade = c.getImage().front().cascade();
+            Cascade<Subject> cascade = c.getImage().cascade();
 
             for(var ref : cascade.toEnd()) {
                 Xray key = ref.key().asExpected();

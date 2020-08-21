@@ -28,7 +28,7 @@ public class JorgReformer {
     public JorgReformer(boolean enableStandardReformers, boolean enableDefaultRecipes, boolean enableDefaultAdapters) {
 
         if(enableStandardReformers) {
-            reformers.insetAll(StandardReformer.getAllSupported().front());
+            reformers.insetAll(StandardReformer.getAllSupported());
         }
 
         if(enableDefaultRecipes) {
@@ -37,7 +37,7 @@ public class JorgReformer {
                 if(sub.assigned(Class.class) && sub.key().assigned(Suite.AutoKey.class)) {
                     Class<?> type = sub.asExpected();
                     try {
-                        return type.getMethod("form", Subject.class).invoke(null, sub.frontFrom(Slot.in(1)).set());
+                        return type.getMethod("form", Subject.class).invoke(null, sub.front(Slot.in(1)).set());
                     } catch (Exception e) {
                         return null;
                     }
@@ -106,7 +106,7 @@ public class JorgReformer {
                 Subject image = xkey.getImage();
                 Subject params = Suite.set();
                 // Parametry konstrukcyjne to parametry przed termiantorem
-                for(var s : image.front()) {
+                for(var s : image) {
                     Xkey key = s.key().asExpected();
                     image.take(key);
                     if(key.isUnderConstruction()) throw new JorgReadException("Construction loop");
@@ -139,7 +139,7 @@ public class JorgReformer {
                     } else if (image.size() == 0 && params.key().assigned(Suite.AutoKey.class)) {
                         o = params.direct();
                     } else {
-                        o = Suite.insetAll(params.front());
+                        o = Suite.insetAll(params);
                     }
                 } else if(params.size() == 2) {
                     var p0 = params.at(0);
@@ -151,10 +151,10 @@ public class JorgReformer {
                             p1.assigned(Boolean.class) && p1.key().assigned(Suite.AutoKey.class)) {
                         o = Array.newInstance(p0.asExpected(), image.size());
                     } else {
-                        o = Suite.insetAll(params.front());
+                        o = Suite.insetAll(params);
                     }
                 } else {
-                    o = Suite.insetAll(params.front());
+                    o = Suite.insetAll(params);
                 }
 
                 xkey.setObject(o);
@@ -182,7 +182,7 @@ public class JorgReformer {
                 o instanceof Integer || o instanceof Long || o instanceof Float || o instanceof Double ||
                 o instanceof String || o instanceof Class) return;
 
-        Subject params = xkey.getImage().front().map(
+        Subject params = xkey.getImage().map(
                 s -> Suite.set(s.key().asGiven(Xkey.class).getObject(), s.asGiven(Xkey.class).getObject())).set();
 
         if(o instanceof Reformable) {
@@ -205,7 +205,7 @@ public class JorgReformer {
         if (type.isPrimitive()) {
             if (type == Integer.TYPE) {
                 int[] a = (int[]) o;
-                for(var sub : s.front()) {
+                for(var sub : s) {
                     if(sub.key().assigned(Integer.class)) {
                         i = sub.key().asExpected();
                     }
@@ -213,7 +213,7 @@ public class JorgReformer {
                 }
             } else if (type == Byte.TYPE) {
                 byte[] a = (byte[]) o;
-                for(var sub : s.front()) {
+                for(var sub : s) {
                     if(sub.key().assigned(Integer.class)) {
                         i = sub.key().asExpected();
                     }
@@ -221,7 +221,7 @@ public class JorgReformer {
                 }
             } else if (type == Long.TYPE) {
                 long[] a = (long[]) o;
-                for(var sub : s.front()) {
+                for(var sub : s) {
                     if(sub.key().assigned(Integer.class)) {
                         i = sub.key().asExpected();
                     }
@@ -229,7 +229,7 @@ public class JorgReformer {
                 }
             } else if (type == Float.TYPE) {
                 float[] a = (float[]) o;
-                for(var sub : s.front()) {
+                for(var sub : s) {
                     if(sub.key().assigned(Integer.class)) {
                         i = sub.key().asExpected();
                     }
@@ -237,7 +237,7 @@ public class JorgReformer {
                 }
             } else if (type == Double.TYPE) {
                 double[] a = (double[]) o;
-                for(var sub : s.front()) {
+                for(var sub : s) {
                     if(sub.key().assigned(Integer.class)) {
                         i = sub.key().asExpected();
                     }
@@ -245,7 +245,7 @@ public class JorgReformer {
                 }
             } else if (type == Short.TYPE) {
                 short[] a = (short[]) o;
-                for(var sub : s.front()) {
+                for(var sub : s) {
                     if(sub.key().assigned(Integer.class)) {
                         i = sub.key().asExpected();
                     }
@@ -253,7 +253,7 @@ public class JorgReformer {
                 }
             } else if (type == Character.TYPE) {
                 char[] a = (char[]) o;
-                for(var sub : s.front()) {
+                for(var sub : s) {
                     if(sub.key().assigned(Integer.class)) {
                         i = sub.key().asExpected();
                     }
@@ -261,7 +261,7 @@ public class JorgReformer {
                 }
             } else if (type == Boolean.TYPE) {
                 boolean[] a = (boolean[]) o;
-                for(var sub : s.front()) {
+                for(var sub : s) {
                     if(sub.key().assigned(Integer.class)) {
                         i = sub.key().asExpected();
                     }
@@ -272,7 +272,7 @@ public class JorgReformer {
             }
         } else {
             Object[] a = (Object[]) o;
-            for(var sub : s.front()) {
+            for(var sub : s) {
                 if(sub.key().assigned(Integer.class)) {
                     i = sub.key().asExpected();
                 }
@@ -287,7 +287,7 @@ public class JorgReformer {
             var recipe = typedRecipes.get(type);
             if(recipe.settled()) {
                 Function<Subject, ?> function = recipe.asExpected();
-                return function.apply(s.frontFrom(Slot.in(1)).set());
+                return function.apply(s.front(Slot.in(1)).set());
             }
         }
         return null;

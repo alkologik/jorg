@@ -38,15 +38,15 @@ public class StandardReformer {
     }
 
     public static void reformSubject(Subject subject, Subject sub) {
-        subject.insetAll(sub.front());
+        subject.insetAll(sub);
     }
 
     public static void reformCollection(Collection<?> collection, Subject sub) {
-        sub.front().forEach(s -> collection.add(s.asExpected()));
+        sub.forEach(s -> collection.add(s.asExpected()));
     }
 
     public static void reformMap(Map<?, ?> map, Subject sub) {
-        sub.front().forEach(s -> map.put(s.key().asExpected(), s.asExpected()));
+        sub.forEach(s -> map.put(s.key().asExpected(), s.asExpected()));
     }
 
     public static void reformFile(File file, Subject sub) {}

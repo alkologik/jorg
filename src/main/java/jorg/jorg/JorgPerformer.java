@@ -21,7 +21,7 @@ public class JorgPerformer {
 
     public JorgPerformer(boolean enableStandardPerformers, boolean enableDefaultPorts) {
         if(enableStandardPerformers) {
-            performers.insetAll(StandardPerformer.getAllSupported().front());
+            performers.insetAll(StandardPerformer.getAllSupported());
         }
 
         if(enableDefaultPorts) {
@@ -50,7 +50,7 @@ public class JorgPerformer {
         solution = Suite.set();
         automaticIndex = 0;
 
-        for(var s : solid.front()) {
+        for(var s : solid) {
 
             Xray xray = new Xray(s.key().asExpected(), s.direct());
             Subject sub = solution.get(Xray.image(s.direct()));
@@ -63,7 +63,7 @@ public class JorgPerformer {
             solution.set(xray);
         }
 
-        for(Xray xray : solution.front().keys().filter(Xray.class).filter(x -> !x.isReady())) {
+        for(Xray xray : solution.keys(Xray.class).filter(x -> !x.isReady())) {
             Object o = xray.getObject();
             Xray x = directImage(o);
             if (x != null) {
@@ -72,12 +72,12 @@ public class JorgPerformer {
             } else if (o instanceof Performable) {
                 Subject sub = ((Performable) o).perform();
                 if(sub == null) throw new NullPointerException();
-                xray.getImage().insetAll(subjectImage(sub).front());
+                xray.getImage().insetAll(subjectImage(sub));
                 xray.setReady(true);
             } else if(o.getClass().isArray()) {
                 Subject sub = arrayImage(o);
                 if (sub != null) {
-                    xray.getImage().insetAll(sub.front());
+                    xray.getImage().insetAll(sub);
                     xray.setReady(true);
                 } else throw new JorgWriteException("Cant perform array of " + o.getClass().getComponentType());
             } else {
@@ -86,13 +86,13 @@ public class JorgPerformer {
                     Function<Object, Subject> performer = sub.asExpected();
                     sub = performer.apply(o);
                     if(sub == null) throw new NullPointerException();
-                    xray.getImage().insetAll(subjectImage(sub).front());
+                    xray.getImage().insetAll(subjectImage(sub));
                     xray.setReady(true);
                 } else throw new JorgWriteException("Cant perform object of " + o.getClass());
             }
         }
 
-        return solution.front().keys().filter(Xray.class).cascade();
+        return solution.keys(Xray.class).cascade();
     }
 
     private Xray directImage(Object o) {
@@ -110,7 +110,7 @@ public class JorgPerformer {
 
     private Subject subjectImage(Subject subject) {
         Subject sub = Suite.set();
-        for (var s : subject.front()) {
+        for (var s : subject) {
             Xray keyXray = directImage(s.key().direct());
             if (keyXray == null) {
                 Subject s1 = solution.get(Xray.image(s.key().direct()));

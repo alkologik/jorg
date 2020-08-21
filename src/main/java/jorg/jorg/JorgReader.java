@@ -121,10 +121,10 @@ public class JorgReader {
             }
             xkeys = processor.finish();
 
-            for (Xkey xkey : xkeys.front().values().filter(Xkey.class).filter(x -> x.getObject() == null)) {
+            for (Xkey xkey : xkeys.values().filter(Xkey.class).filter(x -> x.getObject() == null)) {
                 reformer.construct(xkey);
             }
-            for (Xkey xkey : xkeys.front().values().filter(Xkey.class).filter(x -> x.getLabel() instanceof Reference)) {
+            for (Xkey xkey : xkeys.values().filter(Xkey.class).filter(x -> x.getLabel() instanceof Reference)) {
                 reformer.reform(xkey);
                 Reference ref = (Reference) xkey.getLabel();
                 objects.set(ref.getId(), xkey.getObject());
