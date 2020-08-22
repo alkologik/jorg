@@ -38,7 +38,7 @@ public class StandardReformer {
     }
 
     public static void reformSubject(Subject subject, Subject sub) {
-        subject.insetAll(sub);
+        subject.inset(sub);
     }
 
     public static void reformCollection(Collection<?> collection, Subject sub) {

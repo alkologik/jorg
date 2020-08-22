@@ -21,7 +21,7 @@ public class JorgPerformer {
 
     public JorgPerformer(boolean enableStandardPerformers, boolean enableDefaultPorts) {
         if(enableStandardPerformers) {
-            performers.insetAll(StandardPerformer.getAllSupported());
+            performers.inset(StandardPerformer.getAllSupported());
         }
 
         if(enableDefaultPorts) {
@@ -72,12 +72,12 @@ public class JorgPerformer {
             } else if (o instanceof Performable) {
                 Subject sub = ((Performable) o).perform();
                 if(sub == null) throw new NullPointerException();
-                xray.getImage().insetAll(subjectImage(sub));
+                xray.getImage().inset(subjectImage(sub));
                 xray.setReady(true);
             } else if(o.getClass().isArray()) {
                 Subject sub = arrayImage(o);
                 if (sub != null) {
-                    xray.getImage().insetAll(sub);
+                    xray.getImage().inset(sub);
                     xray.setReady(true);
                 } else throw new JorgWriteException("Cant perform array of " + o.getClass().getComponentType());
             } else {
@@ -86,7 +86,7 @@ public class JorgPerformer {
                     Function<Object, Subject> performer = sub.asExpected();
                     sub = performer.apply(o);
                     if(sub == null) throw new NullPointerException();
-                    xray.getImage().insetAll(subjectImage(sub));
+                    xray.getImage().inset(subjectImage(sub));
                     xray.setReady(true);
                 } else throw new JorgWriteException("Cant perform object of " + o.getClass());
             }

@@ -28,7 +28,7 @@ public class JorgReformer {
     public JorgReformer(boolean enableStandardReformers, boolean enableDefaultRecipes, boolean enableDefaultAdapters) {
 
         if(enableStandardReformers) {
-            reformers.insetAll(StandardReformer.getAllSupported());
+            reformers.inset(StandardReformer.getAllSupported());
         }
 
         if(enableDefaultRecipes) {
@@ -139,7 +139,7 @@ public class JorgReformer {
                     } else if (image.size() == 0 && params.key().assigned(Suite.AutoKey.class)) {
                         o = params.direct();
                     } else {
-                        o = Suite.insetAll(params);
+                        o = Suite.inset(params);
                     }
                 } else if(params.size() == 2) {
                     var p0 = params.at(0);
@@ -151,10 +151,10 @@ public class JorgReformer {
                             p1.assigned(Boolean.class) && p1.key().assigned(Suite.AutoKey.class)) {
                         o = Array.newInstance(p0.asExpected(), image.size());
                     } else {
-                        o = Suite.insetAll(params);
+                        o = Suite.inset(params);
                     }
                 } else {
-                    o = Suite.insetAll(params);
+                    o = Suite.inset(params);
                 }
 
                 xkey.setObject(o);
