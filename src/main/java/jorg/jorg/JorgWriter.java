@@ -13,7 +13,7 @@ import java.util.function.Function;
 
 public class JorgWriter {
 
-    private static final int escapeCharacter = '`';
+    /*private static final int escapeCharacter = '`';
 
     public boolean write(Object object, String filePath) {
         objects.set("0", object);
@@ -290,5 +290,5 @@ public class JorgWriter {
         }
         return stringBuilder.toString();
     }
-
+*/
 }

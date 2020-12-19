@@ -12,6 +12,7 @@ import java.util.*;
 import java.util.function.Function;
 
 public class StandardPerformer {
+/*
 
     public static Subject getAllSupported() {
         return Suite.
@@ -59,5 +60,6 @@ public class StandardPerformer {
     public static Subject performFile(File file) {
         return Suite.add(File.class).add(file.getPath());
     }
+*/
 
 }

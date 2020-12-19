@@ -9,7 +9,7 @@ import java.util.function.Function;
 
 public class Jorg {
 
-    public static final Object terminator = new Object();
+    /*public static final Object terminator = new Object();
 
     public static<T> T read(String filePath) {
         return new JorgReader().read(filePath);
@@ -65,5 +65,5 @@ public class Jorg {
 
     public static JorgWriter withPort(Object object, String id) {
         return new JorgWriter().withPort(object, id);
-    }
+    }*/
 }

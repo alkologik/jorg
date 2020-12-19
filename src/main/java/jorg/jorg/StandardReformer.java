@@ -11,7 +11,7 @@ import java.util.function.BiConsumer;
 
 public class StandardReformer {
 
-    public static Subject getAllSupported() {
+    /*public static Subject getAllSupported() {
         return Suite.
                 set(SolidSubject.class, (BiConsumer<Subject, Subject>)StandardReformer::reformSubject).
                 set(ArrayList.class, (BiConsumer<Collection<?>, Subject>)StandardReformer::reformCollection).
@@ -51,5 +51,5 @@ public class StandardReformer {
 
     public static void reformFile(File file, Subject sub) {}
 
-
+*/
 }

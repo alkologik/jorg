@@ -1,6 +1,5 @@
 package jorg.jorg;
 
-import jorg.jorg.util.PortableList;
 import suite.suite.Slot;
 import suite.suite.Subject;
 import suite.suite.Suite;
@@ -11,11 +10,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-import static jorg.jorg.Jorg.terminator;
 
 public class JorgReformer {
 
-    private final Subject recipes = Suite.set();
+    /*private final Subject recipes = Suite.set();
     private final Subject typedRecipes = Suite.set();
     private final Subject reformers = Suite.set();
     private final Subject adapters = Suite.set();
@@ -60,7 +58,6 @@ public class JorgReformer {
             setAdapter("list", PortableList.class);
         }
     }
-
 
     public void setRecipe(Function<Subject, Object> recipe) {
         recipes.set(recipe);
@@ -291,5 +288,5 @@ public class JorgReformer {
             }
         }
         return null;
-    }
+    }*/
 }

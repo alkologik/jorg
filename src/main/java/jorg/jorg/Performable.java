@@ -3,7 +3,7 @@ package jorg.jorg;
 import suite.suite.Subject;
 
 public interface Performable {
-    default Subject perform() {
-        return StandardPerformer.perform(this);
-    }
+//    default Subject perform() {
+//        return StandardPerformer.perform(this);
+//    }
 }

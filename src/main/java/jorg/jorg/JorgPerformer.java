@@ -1,6 +1,6 @@
 package jorg.jorg;
 
-import jorg.jorg.util.PortableList;
+
 import suite.suite.Subject;
 import suite.suite.Suite;
 import suite.suite.util.Cascade;
@@ -9,7 +9,7 @@ import java.util.function.Function;
 
 public class JorgPerformer {
 
-    private final Subject performers = Suite.set();
+    /*private final Subject performers = Suite.set();
     private final Subject ports = Suite.set();
 
     private Subject solution;
@@ -210,5 +210,5 @@ public class JorgPerformer {
 
     private Subject addXray(Subject s, Xray x) {
         return s.set(Xray.image(new Suite.AutoKey()), x);
-    }
+    }*/
 }

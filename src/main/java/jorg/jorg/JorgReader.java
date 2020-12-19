@@ -12,7 +12,7 @@ import java.util.function.Function;
 
 public class JorgReader {
 
-    private JorgReformer reformer;
+    /*private JorgReformer reformer;
     private final Subject objects;
 
     public JorgReader() {
@@ -136,5 +136,5 @@ public class JorgReader {
 
     public Subject getObjects() {
         return objects;
-    }
+    }*/
 }
