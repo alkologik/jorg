@@ -1,7 +1,7 @@
 rootProject.name = 'jorg'
 
 sourceControl {
-    gitRepository(new URI("C://Users/1/Desktop/PRO/PRO_Java/suite")) { //new URI("https://github.com/dzikalogika/suite.git")) {
+    gitRepository(new URI("https://github.com/dzikalogika/suite.git")) {
         producesModule("lpo:suite")
     }
 }

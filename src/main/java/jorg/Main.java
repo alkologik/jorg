@@ -1,13 +1,15 @@
 package jorg;
 
-import jorg.jorg.BratProcessor;
-import jorg.jorg.Linker;
-import jorg.jorg.Path;
+import jorg.jorg.BracketTreeProcessor;
+import jorg.jorg.BracketTreeReader;
 import jorg.processor.ProcessorException;
+import suite.suite.Subject;
+import suite.suite.Suite;
+import suite.suite.selector.Index;
 
 public class Main {
 
-    public static void main(String[] args) throws ProcessorException {
+    public static void main(String[] args) throws ClassNotFoundException {
 //        Subject s0 = Jorg.withAdapter("a", 15).withAdapter("b", 18.5).parse("[a] #a [b] #b");
 //        System.out.println(s0);
 //        s0.add("le he he");
@@ -21,11 +23,12 @@ public class Main {
 //        System.out.println(jorg + "\n");
 //        s0 = Jorg.parse(jorg);
 //        System.out.println(s0);
-        BratProcessor bratProcessor = new BratProcessor();
-        var $ = bratProcessor.process("a[#c/xD\\od/1]1[xD[od[1]]]b[#1]c[#b]");
-        System.out.println($);
-        Linker linker = new Linker();
-        linker.link($);
-        System.out.println($);
+        BracketTreeProcessor bratProcessor = new BracketTreeProcessor();
+        var $ = bratProcessor.process("][`]  `a`[`xD`[d]]b[$a]c[][`$a/xD`]");
+        System.out.println("RAW:");
+        System.out.println(Suite.describe($));
+        BracketTreeReader reader = new BracketTreeReader();
+        var s1 = reader.parse("[#[int]10] [#[int]22] [#[list[int]][1][2][3]]", Subject.class);
+        System.out.println(s1.in().as(Integer.class) + s1.select(1).in().as(Integer.class));
     }
 }

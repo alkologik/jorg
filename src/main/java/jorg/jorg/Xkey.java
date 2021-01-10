@@ -6,7 +6,7 @@ import suite.suite.Suite;
 import java.util.Objects;
 
 public class Xkey {
-    private Object object;
+    /*private Object object;
     private Object label;
     private final Subject image;
     private boolean constructed;
@@ -91,5 +91,5 @@ public class Xkey {
 
     public String dataAsString() {
         return " [ " + label + " ]\n" + image.toString();
-    }
+    }*/
 }

@@ -1,6 +1,5 @@
 package jorg.jorg;
 
-import suite.suite.Slot;
 import suite.suite.Subject;
 import suite.suite.Suite;
 

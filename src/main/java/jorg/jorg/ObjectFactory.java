@@ -2,95 +2,158 @@ package jorg.jorg;
 
 import suite.suite.Subject;
 import suite.suite.Suite;
+import suite.suite.Vendor;
 import suite.suite.action.Action;
-import suite.suite.util.Fluid;
+import suite.suite.util.Series;
 
 import java.util.function.BiConsumer;
 
 public class ObjectFactory {
 
-    Subject $instances = Suite.set();
+    Subject $refs = Suite.set();
+
+    Subject $backedRefs = Suite.set();
+
+    Subject $backed = Suite.set();
     Subject $constructors = Suite.set();
-    Subject $implementers = Suite.set();
-    Action wizard = (v) -> Suite.set();
-    Linker linker = new Linker();
+    Subject $classAliases = Suite.set();
 
-    Subject $root;
+    public ObjectFactory(Series $constructors) {
+        setConstructors(StandardInterpreter.getAll());
+        setConstructors($constructors);
+        $classAliases.alter(Suite.
+                insert("int", Integer.class).
+                insert("double", Double.class).
+                insert("float", Float.class)
+        );
+    }
 
-    public void setRoot(Subject $root) {
-        this.$root = $root;
+    public FactoryVendor load(Subject $root) {
+        $refs = Suite.set();
+        for(var $1 : Suite.dfs($root)) {
+            for(var $ : $1) {
+                if($.in().present() && $.as(String.class, "").startsWith("$")) {
+                    $refs.alter($);
+                    $1.unset($.direct());
+                }
+            }
+        }
+        $refs.set("$", $root);
+        $refs.alter($backedRefs);
+        return new FactoryVendor(this, $root);
+    }
+
+    public void setParam(String ref, Object param) {
+        if(!ref.startsWith("$")) ref = "$" + ref;
+        var $s = Suite.set();
+        $backedRefs.set(ref, $s);
+        $backed.in($s).set(param);
     }
 
     public void setConstructor(Class<?> type, Action constructor) {
-        $constructors.set(type, constructor);
+        $constructors.in(type).set(constructor);
     }
 
-    public void setConstructors(Fluid constructors) {
-        $constructors.inset(constructors.select(
-                v -> v.instanceOf(Action.class) && v.key() instanceof Class
+    public void setConstructor(Class<?> type, BiConsumer<Subject, ObjectFactory> constructor) {
+        $constructors.in(type).set(constructor);
+    }
+
+    public void setConstructors(Series constructors) {
+        $constructors.alter(constructors.select(v -> v.is(Class.class) &&
+                (v.in().is(Action.class) || v.in().is(BiConsumer.class))
         ));
     }
 
-    public<T> void setImplementer(Class<T> type, BiConsumer<T, Subject> implementer) {
-        $implementers.set(type, implementer);
-    }
-
-    public void setImplementers(Fluid implementers) {
-        $implementers.inset(implementers.select(
-                v -> v.instanceOf(BiConsumer.class) && v.key() instanceof Class
-        ));
-    }
-
-    public void setWizard(Action wizard) {
-        this.wizard = wizard;
-    }
-
-    public Object get(Object o) {
-        var $v = $instances.get(o);
-        if($v.notEmpty())return $v.asExpected();
-        $v = o instanceof Subject ? (Subject)o : Suite.set(o);
-        $v = new FactoryVendor(this, $v);
-
-        var $r = wizard.play($v);
-        Object r = $r.direct();
-        if($r.notEmpty()) $instances.set(o, r);
-        return r;
-    }
-
-    public Subject get(Object o, Class<?> type) {
-        var $v = $instances.get(o);
-        if($v.notEmpty())return $v.asExpected();
-        $v = o instanceof Subject ? (Subject)o : Suite.set(o);
-        $v = new FactoryVendor(this, $v);
-
-        var $r = construct($v, type);
-        if($r.notEmpty()) {
-            $instances.set(o, $r.direct());
-            return $r;
+    public Subject get(Subject $) {
+        if(isReference($)) {
+            $ = findReferred($.asExpected());
         }
 
-        $v = wizard.play($v);
-        if($r.notEmpty()) {
-            $instances.set(o, $r.direct());
+        var $v = $backed.get($);
+        if($v.present()) return $v;
+
+        Class<?> inferredType = inferType($);
+
+        if(inferredType != null) {
+            $v = construct($, inferredType);
+            if ($v.present()) return $v;
         }
-        return $r;
+
+        return $;
     }
 
+    public Subject get(Subject $, Class<?> expectedType) {
 
-    Subject construct(Subject $vendor, Class<?> type) {
-        var $constructor = $constructors.get(type);
-        if($constructor.notEmpty()) {
-            Action constructor = $constructor.asExpected();
-            var $r = constructor.play($vendor);
-            if($r.notEmpty()) {
-                var $implementer = $implementers.get(type);
-                if($implementer.notEmpty()) {
-                    BiConsumer<?, Subject> implementer = $implementer.asExpected();
-                    implementer.accept($r.asExpected(), $vendor);
+        if(isReference($)) {
+            $ = findReferred($.asExpected());
+        }
+
+        var $v = $backed.get($);
+        if($v.present()) return $v;
+
+        Class<?> inferredType = inferType($);
+
+        if(inferredType != null) {
+            if(expectedType.isAssignableFrom(inferredType)) {
+                $v = construct($, inferredType);
+            } else {
+                System.err.println("Expected type (" + expectedType +
+                        ") is not assignable from inferred type (" + inferredType + ")");
+                $v = construct($, expectedType);
+            }
+        } else {
+            $v = construct($, expectedType);
+        }
+
+        if($v.present()) return $v;
+
+        return $;
+    }
+
+    boolean isReference(Subject $) {
+        return $.size() == 1 && $.in().absent() && $.as(String.class, "").startsWith("$");
+    }
+
+    Subject findReferred(Subject $) {
+        do {
+            $ = $refs.get($.asExpected());
+        } while (isReference($));
+        return $;
+    }
+
+    Class<?> inferType(Subject $) {
+        var $type = $.take("#").in();
+        if($type.is(String.class)) {
+            String type = $type.asExpected();
+            if($classAliases.in(type).is(Class.class))
+                return $classAliases.in(type).asExpected();
+            try {
+                return Class.forName(type);
+            } catch (ClassNotFoundException e) {
+                System.err.println("ObjectFactory: class '" + type + "' not found");
+            }
+        }
+        return null;
+    }
+
+    Subject construct(Subject $, Class<?> type) {
+        var $constructor = $constructors.in(type);
+        if($constructor.present()) {
+            if($constructor.is(Action.class)) {
+
+                Action constructor = $constructor.asExpected();
+                var $r = constructor.play(new FactoryVendor(this, $));
+                if($r.present()) {
+                    $backed.in($).set($r.direct());
                 }
                 return $r;
+            } else if($constructor.is(BiConsumer.class)) {
+                BiConsumer<Vendor, ObjectFactory> consumer = $constructor.asExpected();
+                consumer.accept(new FactoryVendor(this, $), this);
+                return $backed.get($);
             }
         }
         return Suite.set();
     }
+
 }
