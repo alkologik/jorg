@@ -6,11 +6,17 @@ import suite.suite.Vendor;
 import suite.suite.action.Action;
 import suite.suite.util.Series;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.List;
 import java.util.function.BiConsumer;
 
 public class ObjectFactory {
 
     Subject $refs = Suite.set();
+    Subject $inferredTypes = Suite.set();
 
     Subject $backedRefs = Suite.set();
 
@@ -24,17 +30,27 @@ public class ObjectFactory {
         $classAliases.alter(Suite.
                 insert("int", Integer.class).
                 insert("double", Double.class).
-                insert("float", Float.class)
+                insert("float", Float.class).
+                insert("list", List.class).
+                insert("subject", Subject.class).
+                insert("string", String.class)
         );
     }
 
     public FactoryVendor load(Subject $root) {
         $refs = Suite.set();
+        $inferredTypes = Suite.set();
         for(var $1 : Suite.dfs($root)) {
             for(var $ : $1) {
-                if($.in().present() && $.as(String.class, "").startsWith("$")) {
-                    $refs.alter($);
-                    $1.unset($.direct());
+                if($.in().present()) {
+                    var str = $.as(String.class, "");
+                    if(str.startsWith("$")) {
+                        $refs.alter($);
+                        $1.unset(str);
+                    } else if(str.equals("#")) {
+                        $inferredTypes.set($1, inferType($));
+                        $1.unset(str);
+                    }
                 }
             }
         }
@@ -64,36 +80,23 @@ public class ObjectFactory {
         ));
     }
 
-    public Subject get(Subject $) {
-        if(isReference($)) {
-            $ = findReferred($.asExpected());
-        }
-
-        var $v = $backed.get($);
-        if($v.present()) return $v;
-
-        Class<?> inferredType = inferType($);
-
-        if(inferredType != null) {
-            $v = construct($, inferredType);
-            if ($v.present()) return $v;
-        }
-
-        return $;
-    }
-
     public Subject get(Subject $, Class<?> expectedType) {
 
         if(isReference($)) {
-            $ = findReferred($.asExpected());
+            $ = findReferred($);
         }
 
-        var $v = $backed.get($);
-        if($v.present()) return $v;
+        var $v = $backed.in($).get();
+        if($v.present()) {
+            if($v.is(expectedType) || $v.direct() == null) return $v;
+            else  System.err.println("Expected type (" + expectedType +
+                    ") is not supertype of backed object type (" + $v.direct().getClass() + ")");
+        }
 
-        Class<?> inferredType = inferType($);
+        var $inferredType = $inferredTypes.in($).get();
 
-        if(inferredType != null) {
+        if($inferredType.is(Class.class)) {
+            Class<?> inferredType = $inferredType.asExpected();
             if(expectedType.isAssignableFrom(inferredType)) {
                 $v = construct($, inferredType);
             } else {
@@ -105,9 +108,7 @@ public class ObjectFactory {
             $v = construct($, expectedType);
         }
 
-        if($v.present()) return $v;
-
-        return $;
+        return $v;
     }
 
     boolean isReference(Subject $) {
@@ -116,41 +117,76 @@ public class ObjectFactory {
 
     Subject findReferred(Subject $) {
         do {
-            $ = $refs.get($.asExpected());
+            $ = $refs.in($.asExpected()).get();
         } while (isReference($));
         return $;
     }
 
-    Class<?> inferType(Subject $) {
-        var $type = $.take("#").in();
+    Subject inferType(Subject $) {
+        var $type = $.take("#").in().get();
         if($type.is(String.class)) {
             String type = $type.asExpected();
             if($classAliases.in(type).is(Class.class))
-                return $classAliases.in(type).asExpected();
-            try {
-                return Class.forName(type);
+                return $classAliases.in(type).get();
+            else try {
+                return Suite.set(Class.forName(type));
             } catch (ClassNotFoundException e) {
                 System.err.println("ObjectFactory: class '" + type + "' not found");
             }
         }
-        return null;
+        return Suite.set();
     }
 
     Subject construct(Subject $, Class<?> type) {
-        var $constructor = $constructors.in(type);
+        var $constructor = $constructors.in(type).get();
         if($constructor.present()) {
-            if($constructor.is(Action.class)) {
+            if ($constructor.is(Action.class)) {
 
                 Action constructor = $constructor.asExpected();
-                var $r = constructor.play(new FactoryVendor(this, $));
-                if($r.present()) {
+                var $r = constructor.play(new FactoryVendorRoot(this, $));
+                if ($r.present()) {
                     $backed.in($).set($r.direct());
                 }
                 return $r;
-            } else if($constructor.is(BiConsumer.class)) {
+            } else if ($constructor.is(BiConsumer.class)) {
                 BiConsumer<Vendor, ObjectFactory> consumer = $constructor.asExpected();
-                consumer.accept(new FactoryVendor(this, $), this);
+                consumer.accept(new FactoryVendorRoot(this, $), this);
                 return $backed.get($);
+            }
+        } else {
+            try {
+                Method method = type.getDeclaredMethod("generate", Subject.class);
+                if(method.trySetAccessible()) {
+                    int modifiers = method.getModifiers();
+                    if(Subject.class.isAssignableFrom(method.getReturnType()) && Modifier.isStatic(modifiers)) {
+                        var $r = (Subject)method.invoke(null, new FactoryVendorRoot(this, $));
+                        if ($r.present()) $backed.in($).set($r.direct());
+                        return $r;
+                    }
+                }
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ignored) {}
+            try {
+                Method method = type.getDeclaredMethod("generate", Subject.class, ObjectFactory.class);
+                if(method.trySetAccessible()) {
+                    int modifiers = method.getModifiers();
+                    if(Subject.class.isAssignableFrom(method.getReturnType()) && Modifier.isStatic(modifiers)) {
+                        var $r = (Subject)method.invoke(null, new FactoryVendorRoot(this, $), this);
+                        if ($r.present()) $backed.in($).set($r.direct());
+                        return $r;
+                    }
+                }
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ignored) {}
+            if(Interpreted.class.isAssignableFrom(type)) {
+                try {
+                    Constructor<?> constructor = type.getDeclaredConstructor();
+                    Interpreted reformable = (Interpreted)constructor.newInstance();
+                    $backed.in($).set(reformable);
+                    reformable.interpret(new FactoryVendorRoot(this, $));
+                    return Suite.set(reformable);
+                } catch (NoSuchMethodException | IllegalAccessException |
+                        InstantiationException | InvocationTargetException ignored) {
+                    ignored.printStackTrace();
+                }
             }
         }
         return Suite.set();

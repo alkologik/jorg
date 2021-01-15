@@ -5,6 +5,9 @@ import suite.suite.Subject;
 import suite.suite.Suite;
 
 import java.util.Stack;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public class BracketTreeProcessor implements IntProcessor {
 
@@ -71,7 +74,7 @@ public class BracketTreeProcessor implements IntProcessor {
                     Subject newWork = Suite.set();
                     appendSecondaryBuilder(primaryBuilder.toString().trim() ,true);
                     if(secondaryBuilder != null) {
-                        work.set(secondaryBuilder.toString(), newWork);
+                        work.setIf(secondaryBuilder.toString(), newWork, work::absent);
                     } else {
                         work.add(newWork);
                     }
@@ -82,7 +85,7 @@ public class BracketTreeProcessor implements IntProcessor {
                  } else if (i == closeSign) {
                     appendSecondaryBuilder(primaryBuilder.toString().trim() ,true);
                     if(secondaryBuilder != null) {
-                        work.set(secondaryBuilder.toString());
+                        work.setIf(secondaryBuilder.toString(), work::absent);
                     }
                     if(branch.empty()) state = State.BEFORE;
                     else work = branch.pop();
@@ -113,10 +116,10 @@ public class BracketTreeProcessor implements IntProcessor {
     public Subject finish() {
         if(state == State.TREE) {
             appendSecondaryBuilder(primaryBuilder.toString().trim() ,true);
-            if(secondaryBuilder != null) work.set(secondaryBuilder.toString());
+            if(secondaryBuilder != null) work.setIf(secondaryBuilder.toString(), work::absent);
         } else if(state == State.FENCE) {
             appendSecondaryBuilder(primaryBuilder.toString(),false);
-            work.set(secondaryBuilder.toString());
+            work.setIf(secondaryBuilder.toString(), work::absent);
         }
         while (!branch.empty()) work = branch.pop();
         return work;

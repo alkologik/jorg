@@ -21,7 +21,7 @@ public class StandardReformer {
                 ;
     }
 
-    public static void reform(Reformable reformable, Subject sub) {
+    public static void interpret(Reformable reformable, Subject sub) {
         for(Class<?> aClass = reformable.getClass(); aClass != Object.class; aClass = aClass.getSuperclass()) {
             try {
                 Field[] fields = aClass.getDeclaredFields();

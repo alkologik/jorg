@@ -1,6 +1,7 @@
 package jorg.jorg;
 
 import suite.suite.Subject;
+import suite.suite.Suite;
 import suite.suite.action.Action;
 
 import java.io.*;
@@ -12,7 +13,6 @@ import java.util.function.BiConsumer;
 public class BracketTreeReader {
 
     private ObjectFactory factory;
-    private Subject $bracketTree;
 
     public BracketTreeReader() {
         this(new ObjectFactory(StandardInterpreter.getAll()));
@@ -45,82 +45,60 @@ public class BracketTreeReader {
         return this;
     }
 
-    public<T> T read(String filePath) {
-        return loadWell(new File(filePath)) ? $bracketTree.asExpected() : null;
+    public Subject read(String filePath) {
+        return loadWell(new File(filePath));
     }
 
-    public<T> T read(File file) {
-        return loadWell(file) ? $bracketTree.asExpected() : null;
+    public Subject read(File file) {
+        return loadWell(file);
     }
 
-    public<T> T read(InputStream inputStream) {
-        return loadWell(inputStream) ? $bracketTree.asExpected() : null;
+    public Subject read(InputStream inputStream) {
+        return loadWell(inputStream);
     }
 
-    public<T> T parse(String jorg) {
+    public Subject parse(String jorg) {
         InputStream inputStream = new ByteArrayInputStream(jorg.getBytes());
-        return loadWell(inputStream) ? $bracketTree.asExpected() : null;
+        return loadWell(inputStream);
     }
 
-
-    public<T> T read(String filePath, Class<T> type) {
-        return loadWell(new File(filePath)) ? $bracketTree.as(type) : null;
-    }
-
-    public<T> T read(File file, Class<T> type) {
-        return loadWell(file) ? $bracketTree.as(type) : null;
-    }
-
-    public<T> T read(InputStream inputStream, Class<T> type) {
-        return loadWell(inputStream) ? $bracketTree.as(type) : null;
-    }
-
-    public<T> T parse(String jorg, Class<T> type) {
-        InputStream inputStream = new ByteArrayInputStream(jorg.getBytes());
-        return loadWell(inputStream) ? $bracketTree.as(type) : null;
-    }
-
-
-    public boolean loadWell(File file) {
+    public Subject loadWell(File file) {
         try {
-            load(file);
-            return true;
+            return load(file);
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
+            return Suite.set();
         }
     }
 
-    public void load(File file) throws IOException, JorgReadException {
-        load(new FileInputStream(file));
+    public Subject load(File file) throws IOException, JorgReadException {
+        return load(new FileInputStream(file));
     }
 
-    public boolean loadWell(URL url) {
+    public Subject loadWell(URL url) {
         try {
-            load(url);
-            return true;
+            return load(url);
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
+            return Suite.set();
         }
     }
 
-    public void load(URL url) throws IOException, JorgReadException {
+    public Subject load(URL url) throws IOException, JorgReadException {
         URLConnection connection = url.openConnection();
-        load(connection.getInputStream());
+        return load(connection.getInputStream());
     }
 
-    public boolean loadWell(InputStream inputStream) {
+    public Subject loadWell(InputStream inputStream) {
         try {
-            load(inputStream);
-            return true;
+            return load(inputStream);
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
+            return Suite.set();
         }
     }
 
-    public void load(InputStream inputStream) throws JorgReadException {
+    public Subject load(InputStream inputStream) throws JorgReadException {
         BracketTreeProcessor processor = new BracketTreeProcessor();
         processor.ready();
         try (inputStream) {
@@ -130,13 +108,9 @@ public class BracketTreeReader {
                 processor.advance(code);
                 code = reader.read();
             }
-            $bracketTree = factory.load(processor.finish());
+            return factory.load(processor.finish());
         }catch(Exception e) {
             throw new JorgReadException(e);
         }
-    }
-
-    public Subject getBracketTree() {
-        return $bracketTree;
     }
 }

@@ -4,11 +4,11 @@ package jorg.jorg;
 import suite.suite.Subject;
 import suite.suite.Vendor;
 
-public class FactoryVendor extends Vendor {
+public class FactoryVendorRoot extends Vendor {
 
     ObjectFactory factory;
 
-    public FactoryVendor(ObjectFactory factory, Subject $local) {
+    public FactoryVendorRoot(ObjectFactory factory, Subject $local) {
         super($local);
         this.factory = factory;
     }
@@ -20,11 +20,11 @@ public class FactoryVendor extends Vendor {
 
     @Override
     protected Subject factor(Subject subject) {
-        return factory.get(subject, Object.class);
+        return subject;
     }
 
     @Override
     protected Subject factor(Subject subject, Class<?> aClass) {
-        return factory.get(subject, aClass);
+        return subject;
     }
 }

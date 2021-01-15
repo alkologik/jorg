@@ -2,12 +2,23 @@ package jorg;
 
 import jorg.jorg.BracketTreeProcessor;
 import jorg.jorg.BracketTreeReader;
-import jorg.processor.ProcessorException;
-import suite.suite.Subject;
+import jorg.jorg.Interpreted;
 import suite.suite.Suite;
-import suite.suite.selector.Index;
 
 public class Main {
+
+    public static class Foo implements Interpreted {
+        int a;
+        int b;
+
+        @Override
+        public String toString() {
+            return "Foo{" +
+                    "a=" + a +
+                    ", b=" + b +
+                    '}';
+        }
+    }
 
     public static void main(String[] args) throws ClassNotFoundException {
 //        Subject s0 = Jorg.withAdapter("a", 15).withAdapter("b", 18.5).parse("[a] #a [b] #b");
@@ -28,7 +39,8 @@ public class Main {
         System.out.println("RAW:");
         System.out.println(Suite.describe($));
         BracketTreeReader reader = new BracketTreeReader();
-        var s1 = reader.parse("[#[int]10] [#[int]22] [#[list[int]][1][2][3]]", Subject.class);
-        System.out.println(s1.in().as(Integer.class) + s1.select(1).in().as(Integer.class));
+        var s1 = reader.parse("#[jorg.Main$Foo] a[1] b[2]");
+        System.out.println(s1.direct());
+//        System.out.println(s1);
     }
 }
