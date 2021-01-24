@@ -15,12 +15,31 @@ public class BracketTreeReader {
     private ObjectFactory factory;
 
     public BracketTreeReader() {
-        this(new ObjectFactory(StandardInterpreter.getAll()));
+        this(new ObjectFactory(StandardDiscoverer.getAll()));
     }
 
     public BracketTreeReader(ObjectFactory factory) {
         this.factory = factory;
     }
+
+    public Subject read(String filePath) {
+        return loadWell(new File(filePath));
+    }
+
+    public Subject read(File file) {
+        return loadWell(file);
+    }
+
+    public Subject read(InputStream inputStream) {
+        return loadWell(inputStream);
+    }
+
+    public Subject parse(String jorg) {
+        InputStream inputStream = new ByteArrayInputStream(jorg.getBytes());
+        return loadWell(inputStream);
+    }
+
+
 
     public ObjectFactory getFactory() {
         return factory;
@@ -43,23 +62,6 @@ public class BracketTreeReader {
     public BracketTreeReader withParam(String ref, Object o) {
         factory.setParam(ref, o);
         return this;
-    }
-
-    public Subject read(String filePath) {
-        return loadWell(new File(filePath));
-    }
-
-    public Subject read(File file) {
-        return loadWell(file);
-    }
-
-    public Subject read(InputStream inputStream) {
-        return loadWell(inputStream);
-    }
-
-    public Subject parse(String jorg) {
-        InputStream inputStream = new ByteArrayInputStream(jorg.getBytes());
-        return loadWell(inputStream);
     }
 
     public Subject loadWell(File file) {

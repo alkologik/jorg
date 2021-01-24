@@ -2,12 +2,14 @@ package jorg;
 
 import jorg.jorg.BracketTreeProcessor;
 import jorg.jorg.BracketTreeReader;
-import jorg.jorg.Interpreted;
+import jorg.jorg.BracketTreeWriter;
+import jorg.jorg.Discovered;
+import suite.suite.Subject;
 import suite.suite.Suite;
 
 public class Main {
 
-    public static class Foo implements Interpreted {
+    public static class Foo implements Discovered {
         int a;
         int b;
 
@@ -35,12 +37,19 @@ public class Main {
 //        s0 = Jorg.parse(jorg);
 //        System.out.println(s0);
         BracketTreeProcessor bratProcessor = new BracketTreeProcessor();
-        var $ = bratProcessor.process("][`]  `a`[`xD`[d]]b[$a]c[][`$a/xD`]");
+        var $ = bratProcessor.process("][']  'a'['xD'[d]]b[$a]c[]['$a[xD]']");
         System.out.println("RAW:");
         System.out.println(Suite.describe($));
         BracketTreeReader reader = new BracketTreeReader();
-        var s1 = reader.parse("#[jorg.Main$Foo] a[1] b[2]");
-        System.out.println(s1.direct());
+        reader.withParam("a", 123.99);
+        var s1 = reader.parse("#[jorg.Main$Foo] a[#a] b[12]");
+        s1.print();
+        Foo foo = s1.asExpected();
+        System.out.println(foo.a);
+//        BracketTreeWriter writer = new BracketTreeWriter();
+//        System.out.println("?");
+//        System.out.println(writer.encode("ok"));
+
 //        System.out.println(s1);
     }
 }

@@ -12,6 +12,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ObjectFactory {
 
@@ -25,7 +27,7 @@ public class ObjectFactory {
     Subject $classAliases = Suite.set();
 
     public ObjectFactory(Series $constructors) {
-        setConstructors(StandardInterpreter.getAll());
+        setConstructors(StandardDiscoverer.getAll());
         setConstructors($constructors);
         $classAliases.alter(Suite.
                 insert("int", Integer.class).
@@ -41,26 +43,25 @@ public class ObjectFactory {
         $refs = Suite.set();
         $inferredTypes = Suite.set();
         for(var $1 : Suite.dfs($root)) {
-            for(var $ : $1) {
-                if($.in().present()) {
+            var $h = $1.take("#");
+            if($h.present()) {
+                $inferredTypes.set($1, inferType($h));
+                for(var $ : $1) {
                     var str = $.as(String.class, "");
-                    if(str.startsWith("$")) {
-                        $refs.alter($);
-                        $1.unset(str);
-                    } else if(str.equals("#")) {
-                        $inferredTypes.set($1, inferType($));
+                    if(str.startsWith("@")) {
+                        $refs.set(str.substring(1), $.in().get());
                         $1.unset(str);
                     }
                 }
             }
         }
-        $refs.set("$", $root);
+        $refs.set("", $root);
         $refs.alter($backedRefs);
-        return new FactoryVendor(this, $root);
+        return prepare($root);
     }
 
     public void setParam(String ref, Object param) {
-        if(!ref.startsWith("$")) ref = "$" + ref;
+        if(ref.startsWith("@")) ref = ref.substring(1);
         var $s = Suite.set();
         $backedRefs.set(ref, $s);
         $backed.in($s).set(param);
@@ -112,7 +113,7 @@ public class ObjectFactory {
     }
 
     boolean isReference(Subject $) {
-        return $.size() == 1 && $.in().absent() && $.as(String.class, "").startsWith("$");
+        return $.size() == 1 && $.in().absent() && $.as(String.class, "").startsWith("@");
     }
 
     Subject findReferred(Subject $) {
@@ -143,15 +144,15 @@ public class ObjectFactory {
             if ($constructor.is(Action.class)) {
 
                 Action constructor = $constructor.asExpected();
-                var $r = constructor.play(new FactoryVendorRoot(this, $));
+                var $r = constructor.play(factoryVendorRoot($));
                 if ($r.present()) {
                     $backed.in($).set($r.direct());
                 }
                 return $r;
             } else if ($constructor.is(BiConsumer.class)) {
                 BiConsumer<Vendor, ObjectFactory> consumer = $constructor.asExpected();
-                consumer.accept(new FactoryVendorRoot(this, $), this);
-                return $backed.get($);
+                consumer.accept(factoryVendorRoot($), this);
+                return $backed.in($).get();
             }
         } else {
             try {
@@ -159,7 +160,7 @@ public class ObjectFactory {
                 if(method.trySetAccessible()) {
                     int modifiers = method.getModifiers();
                     if(Subject.class.isAssignableFrom(method.getReturnType()) && Modifier.isStatic(modifiers)) {
-                        var $r = (Subject)method.invoke(null, new FactoryVendorRoot(this, $));
+                        var $r = (Subject)method.invoke(null, factoryVendorRoot($));
                         if ($r.present()) $backed.in($).set($r.direct());
                         return $r;
                     }
@@ -169,19 +170,18 @@ public class ObjectFactory {
                 Method method = type.getDeclaredMethod("generate", Subject.class, ObjectFactory.class);
                 if(method.trySetAccessible()) {
                     int modifiers = method.getModifiers();
-                    if(Subject.class.isAssignableFrom(method.getReturnType()) && Modifier.isStatic(modifiers)) {
-                        var $r = (Subject)method.invoke(null, new FactoryVendorRoot(this, $), this);
-                        if ($r.present()) $backed.in($).set($r.direct());
-                        return $r;
+                    if(Modifier.isStatic(modifiers)) {
+                        method.invoke(null, factoryVendorRoot($), this);
+                        return $backed.in($).get();
                     }
                 }
             } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ignored) {}
-            if(Interpreted.class.isAssignableFrom(type)) {
+            if(Discovered.class.isAssignableFrom(type)) {
                 try {
                     Constructor<?> constructor = type.getDeclaredConstructor();
-                    Interpreted reformable = (Interpreted)constructor.newInstance();
+                    Discovered reformable = (Discovered)constructor.newInstance();
                     $backed.in($).set(reformable);
-                    reformable.interpret(new FactoryVendorRoot(this, $));
+                    reformable.discover(factoryVendorRoot($));
                     return Suite.set(reformable);
                 } catch (NoSuchMethodException | IllegalAccessException |
                         InstantiationException | InvocationTargetException ignored) {
@@ -191,5 +191,33 @@ public class ObjectFactory {
         }
         return Suite.set();
     }
+
+    FactoryVendorRoot factoryVendorRoot(Subject $sub) {
+//        for(var $ : $sub) {
+//            if($.as(String.class, "").startsWith("#")) {
+//                var d = $.direct();
+//                $sub.shift(d, getDirect(d));
+//            }
+//        }
+        return new FactoryVendorRoot(this, $sub);
+    }
+
+    FactoryVendor prepare(Subject $sub) {
+        for(var $ : $sub) {
+            String str = $.as(String.class, null);
+            if(str != null) {
+                if(str.startsWith("#")) {
+                    $sub.shift(str, getDirect(str.substring(1)));
+                }
+            }
+        }
+        return new FactoryVendor(this, $sub);
+    }
+
+    Object getDirect(String ref) {
+        return get(findReferred(Suite.set(ref)), Object.class).direct();
+    }
+
+
 
 }

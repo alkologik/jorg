@@ -15,7 +15,7 @@ public class FactoryVendorRoot extends Vendor {
 
     @Override
     protected Subject wrap(Subject subject) {
-        return new FactoryVendor(factory, subject);
+        return factory.prepare(subject);
     }
 
     @Override

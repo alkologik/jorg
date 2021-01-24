@@ -170,7 +170,7 @@ public class JorgReformer {
         throw new JorgReadException("Cant create object for " + xkey.getLabel());
     }
 
-    protected void interpret(Xkey xkey) throws JorgReadException {
+    protected void discover(Xkey xkey) throws JorgReadException {
 
         if(xkey.isReformed())return;
         Object o = xkey.getObject();
@@ -182,7 +182,7 @@ public class JorgReformer {
                 s -> Suite.set(s.key().asGiven(Xkey.class).getObject(), s.asGiven(Xkey.class).getObject())).set();
 
         if(o instanceof Reformable) {
-            ((Reformable) o).interpret(params);
+            ((Reformable) o).discover(params);
         } else if(o.getClass().isArray()) {
             reformArray(o, params);
         } else {
