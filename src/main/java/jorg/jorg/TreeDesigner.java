@@ -14,12 +14,16 @@ import java.util.function.BiConsumer;
 
 public class TreeDesigner {
 
-    static class Xray {
+    interface Xray {
+        boolean escaped();
+    }
+
+    static class ObjectXray implements Xray {
         Object o;
         int usages;
         String refId;
 
-        public Xray(Object o) {
+        public ObjectXray(Object o) {
             this.o = o;
             usages = 0;
         }
@@ -29,7 +33,7 @@ public class TreeDesigner {
             if(o == o1) return true;
             if (this == o1) return true;
             if (o1 == null || getClass() != o1.getClass()) return false;
-            Xray xray = (Xray) o1;
+            ObjectXray xray = (ObjectXray) o1;
             return o == xray.o;
         }
 
@@ -40,14 +44,75 @@ public class TreeDesigner {
 
         @Override
         public String toString() {
-            return "$" + refId;
+            return "@" + refId;
+        }
+
+        public boolean escaped() {
+            return false;
         }
     }
+
+    static class StringXray implements Xray {
+        String str;
+
+        public StringXray(String str) {
+            this.str = str;
+        }
+
+        @Override
+        public boolean equals(Object o1) {
+            return false;
+        }
+
+        @Override
+        public int hashCode() {
+            return str.hashCode();
+        }
+
+        @Override
+        public String toString() {
+            return str;
+        }
+
+        public boolean escaped() {
+            return true;
+        }
+    }
+
+    static class SpecialXray implements Xray {
+        String str;
+
+        public SpecialXray(String str) {
+            this.str = str;
+        }
+
+        @Override
+        public boolean equals(Object o1) {
+            return false;
+        }
+
+        @Override
+        public int hashCode() {
+            return str.hashCode();
+        }
+
+        @Override
+        public String toString() {
+            return str;
+        }
+
+        public boolean escaped() {
+            return false;
+        }
+    }
+
+    static final Xray hashXray = new SpecialXray("#");
 
     Subject $refs = Suite.set();
     Subject $decompositions = Suite.set();
 
     Subject $decomposers = Suite.set();
+    boolean attachingTypes;
     Subject $classAliases = Suite.set();
 
     public TreeDesigner() {
@@ -63,22 +128,35 @@ public class TreeDesigner {
                 insert(Subject.class, "subject").
                 insert(String.class, "string")
         );
+        $decompositions.alter(Suite.
+                set(null, Suite.set(new SpecialXray("@null")))
+        );
+        attachingTypes = true;
+    }
+
+    public boolean isAttachingTypes() {
+        return attachingTypes;
+    }
+
+    public void setAttachingTypes(boolean attachingTypes) {
+        this.attachingTypes = attachingTypes;
     }
 
     public Subject load(Object o) {
         $refs = Suite.set();
         var xray = xray(o);
-        $decompositions.print();
-        var $xRoot = $refs.in(xray).get();
+        var $xRoot = xray instanceof StringXray ? Suite.set(xray) : $refs.in(xray).get();
         int id = 1;
-        for(var $i : Suite.dfs($xRoot)) {
-            if(isLeaf($i) && $i.is(Xray.class)) {
-                Xray x = $i.as(Xray.class);
-                if(x.usages < 2) {
-                    $i.unset().alter($refs.in(x).get());
-                } else {
-                    x.refId = "" + id++;
-                    $xRoot.set(x, $refs.in(x).get());
+        for(var $i : Suite.preDfs(Suite.add($xRoot)).eachIn()) {
+            for(var $i1 : $i) {
+                if($i1.is(ObjectXray.class)) {
+                    ObjectXray x = $i1.asExpected();
+                    if (x.usages < 2 && $i.size() == 1 && $i1.in().absent()) {
+                        $i.unset().alter($refs.in(x).get());
+                    } else {
+                        if (x.refId == null) x.refId = "" + id++;
+                        $xRoot.set(x, $refs.in(x).get());
+                    }
                 }
             }
         }
@@ -104,17 +182,17 @@ public class TreeDesigner {
     }
 
     Xray xray(Object o) {
-        Xray xray = $refs.getFilled(new Xray(o)).asExpected();
+        if(o instanceof Xray) return (Xray) o;
+        if(o instanceof String) return new StringXray((String)o);
+        ObjectXray xray = $refs.getFilled(new ObjectXray(o)).asExpected();
         if(xray.usages++ < 1) {
             var $ = decompose(o);
-            $decompositions.print();
             $refs.set(xray, $);
-//            for(var $i : Suite.dfs($)) {
-//                if(isLeaf($i)) {
-//                    var in = $i.direct();
-//                    $i.shift(in, xray(in));
-//                }
-//            }
+            for(var $i : Suite.preDfs(Suite.add($)).eachIn()) {
+                for(var i : $i.eachDirect()) {
+                    $i.shift(i, xray(i));
+                }
+            }
         }
 
         return xray;
@@ -125,9 +203,10 @@ public class TreeDesigner {
     }
 
     Subject decompose(Object o) {
-        Class<?> type = o.getClass();
 
         if($decompositions.present(o)) return $decompositions.in(o).get();
+
+        Class<?> type = o.getClass();
 
         var $decomposer = $decomposers.in(type).get();
         if($decomposer.present()) {
@@ -135,6 +214,7 @@ public class TreeDesigner {
 
                 Action decomposer = $decomposer.asExpected();
                 var $r = decomposer.play(Suite.set(o));
+                if(isAttachingTypes()) attachType($r, type);
                 $decompositions.set(o, $r);
                 return $r;
             } else if ($decomposer.is(BiConsumer.class)) {
@@ -149,6 +229,7 @@ public class TreeDesigner {
                     int modifiers = method.getModifiers();
                     if(Subject.class.isAssignableFrom(method.getReturnType()) && Modifier.isStatic(modifiers)) {
                         var $r = (Subject)method.invoke(null, Suite.set(o));
+                        if(attachingTypes) attachType($r, type);
                         $decompositions.set(o, $r);
                         return $r;
                     }
@@ -165,11 +246,16 @@ public class TreeDesigner {
             } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ignored) {}
             if(o instanceof Interpreted) {
                 var $r = ((Interpreted)o).interpret();
+                $r.setBefore($r.direct(), hashXray, Suite.set($classAliases.in(type).orGiven(type.toString())));
                 $decompositions.set(o, $r);
                 return $r;
             }
         }
         return Suite.set();
+    }
+
+    void attachType(Subject $, Class<?> type) {
+        $.setBefore($.direct(), hashXray, Suite.set($classAliases.in(type).orGiven(type.toString())));
     }
 
 }

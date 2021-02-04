@@ -1,23 +1,22 @@
 package jorg.jorg;
 
-import suite.suite.Subject;
 import suite.suite.Suite;
 import suite.suite.action.Action;
-import suite.suite.util.Cascade;
 
 import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 
 public class BracketTreeWriter {
 
     private TreeDesigner designer;
     private boolean compact;
     private boolean root;
+    private int extendSign = '[';
+    private int closeSign = ']';
+    private int fenceSign = '"';
+
 
     public BracketTreeWriter() {
         this(new TreeDesigner());
@@ -148,22 +147,15 @@ public class BracketTreeWriter {
     }
 
     private String stringify(Object object) {
-        if(object instanceof String) {
-            return escaped((String)object);
-        } else if(object instanceof TreeDesigner.Xray) {
-            return object.toString();
-        } else if(object == null || object instanceof Suite.Auto) {
-            return "";
-        } else if (object instanceof Boolean) {
-            return (Boolean) object ? "+" : "-";
-        } else return escaped(Objects.toString(object));
+        TreeDesigner.Xray x = (TreeDesigner.Xray)object;
+        return x.escaped() ? escaped(x.toString()) : x.toString();
     }
 
     private String escaped(String str) {
-        if(str.startsWith("$") || str.startsWith("#") || str.trim().length() < str.length() ||
-                str.contains("[") || str.contains("]")) {
+        if(str.startsWith("@") || str.startsWith("#") || str.trim().length() < str.length() ||
+                str.contains("" + extendSign) || str.contains("" + closeSign)) {
             int i = 0;
-            while(str.contains("\"" + "^".repeat(i)))++i;
+            while(str.contains(fenceSign + "^".repeat(i)))++i;
             return "^".repeat(i) + "\"" + str + "\"" + "^".repeat(i);
         }
         return str;

@@ -1,21 +1,33 @@
 package jorg;
 
-import jorg.jorg.BracketTreeProcessor;
-import jorg.jorg.BracketTreeReader;
-import jorg.jorg.BracketTreeWriter;
-import jorg.jorg.Discovered;
+import jorg.jorg.*;
 import suite.suite.Subject;
-import suite.suite.Suite;
 
 public class Main {
 
-    public static class Foo implements Discovered {
+    public static class Foo implements Interpreted, Discovered {
         int a;
         int b;
+        String str = "@^^";
+        Foo foo = null;
+
+        public Foo() {
+        }
+
+        public Foo(int a, int b) {
+            this.a = a;
+            this.b = b;
+        }
+
+        public Foo(int a, int b, Foo foo) {
+            this.a = a;
+            this.b = b;
+            this.foo = foo;
+        }
 
         @Override
         public String toString() {
-            return "Foo{" +
+            return super.toString() + "{" +
                     "a=" + a +
                     ", b=" + b +
                     '}';
@@ -23,33 +35,11 @@ public class Main {
     }
 
     public static void main(String[] args) throws ClassNotFoundException {
-//        Subject s0 = Jorg.withAdapter("a", 15).withAdapter("b", 18.5).parse("[a] #a [b] #b");
-//        System.out.println(s0);
-//        s0.add("le he he");
-//        s0.add(null);
-//        s0.set("n", null);
-//        s0.set("n1", null);
-//        s0.add(null);
-//        JorgWriter writer = new JorgWriter();
-//        writer.setCompactMode(true);
-//        String jorg = writer.encode(s0);
-//        System.out.println(jorg + "\n");
-//        s0 = Jorg.parse(jorg);
-//        System.out.println(s0);
-        BracketTreeProcessor bratProcessor = new BracketTreeProcessor();
-        var $ = bratProcessor.process("][']  'a'['xD'[d]]b[$a]c[]['$a[xD]']");
-        System.out.println("RAW:");
-        System.out.println(Suite.describe($));
+        BracketTreeWriter writer = new BracketTreeWriter();
+        System.out.println(writer.encode(new Foo(1,2, new Foo(3, 4)))); //TODO czemu @null na a i b w wewnetrznym foo ?
         BracketTreeReader reader = new BracketTreeReader();
-        reader.withParam("a", 123.99);
-        var s1 = reader.parse("#[jorg.Main$Foo] a[#a] b[12]");
-        s1.print();
-        Foo foo = s1.asExpected();
-        System.out.println(foo.a);
-//        BracketTreeWriter writer = new BracketTreeWriter();
-//        System.out.println("?");
-//        System.out.println(writer.encode("ok"));
+        reader.getFactory().setType("foo", Foo.class);
+        var $ = reader.parse("a[[@a][d]] b[x[[@a]]] @a[#[foo]a[1]b[2]]").as(Subject.class);
 
-//        System.out.println(s1);
     }
 }

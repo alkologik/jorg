@@ -15,7 +15,7 @@ public class StandardInterpreter {
 
     public static Subject getAllSupported() {
         return Suite.
-                insert(String.class, (Action)s -> s).
+                insert(Integer.class, (Action)StandardInterpreter::interpretPrimitive).
                 insert(ArrayList.class, (Action)StandardInterpreter::interpretCollection).
                 insert(HashSet.class, (Action)StandardInterpreter::interpretCollection).
                 insert(HashMap.class, (Action)StandardInterpreter::interpretMap).
@@ -41,6 +41,10 @@ public class StandardInterpreter {
             }
         }
         return $;
+    }
+
+    public static Subject interpretPrimitive(Subject $in) {
+        return Suite.set($in.direct().toString());
     }
 
     public static Subject interpretCollection(Subject $in) {

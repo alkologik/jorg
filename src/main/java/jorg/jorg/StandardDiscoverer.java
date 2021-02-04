@@ -58,13 +58,25 @@ public class StandardDiscoverer {
     }
 
     public static Subject discoverObject(Subject $) {
-        if($.is(String.class)) return discoverString($);
+        if($.size() == 1 && $.in().absent() && $.is(String.class)) return discoverString($);
 
-        return $.getFirst();
+        return discoverSubject($);
     }
 
     public static Subject discoverSubject(Subject $) {
-        return Suite.alter($);
+        var $r = Suite.set();
+        var c = $.cascade();
+        for(var $1 : c) {
+            if($1.is(Suite.Auto.class)) {
+                Object key = $1.in().orDo(Suite.Auto::new);
+                var $2 = c.hasNext() ? c.next() : Suite.set();
+                if($2.is(Suite.Auto.class)) $r.set(key, $2.in().as(Subject.class));
+                else $r.set(key);
+            } else {
+                $r.set($1.direct(), $1.in().as(Subject.class));
+            }
+        }
+        return Suite.set($r);
     }
 
     public static Subject discoverList(Subject $) {

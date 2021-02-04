@@ -43,19 +43,19 @@ public class JorgPerformer {
     }
 
     public void setPort(Object object, String id) {
-        ports.set(object, Xray.image(new Reference(id)));
+        ports.set(object, ObjectXray.image(new Reference(id)));
     }
 
-    public Cascade<Xray> perform(Subject solid) throws JorgWriteException {
+    public Cascade<ObjectXray> perform(Subject solid) throws JorgWriteException {
         solution = Suite.set();
         automaticIndex = 0;
 
         for(var s : solid) {
 
-            Xray xray = new Xray(s.key().asExpected(), s.direct());
-            Subject sub = solution.get(Xray.image(s.direct()));
+            ObjectXray xray = new ObjectXray(s.key().asExpected(), s.direct());
+            Subject sub = solution.get(ObjectXray.image(s.direct()));
             if(sub.settled()) {
-                Xray x = sub.asExpected();
+                ObjectXray x = sub.asExpected();
                 addXray(xray.getImage(), x);
                 xray.setReady(true);
             }
@@ -63,9 +63,9 @@ public class JorgPerformer {
             solution.set(xray);
         }
 
-        for(Xray xray : solution.keys(Xray.class).filter(x -> !x.isReady())) {
+        for(ObjectXray xray : solution.keys(ObjectXray.class).filter(x -> !x.isReady())) {
             Object o = xray.getObject();
-            Xray x = directImage(o);
+            ObjectXray x = directImage(o);
             if (x != null) {
                 addXray(xray.getImage(), x);
                 xray.setReady(true);
@@ -92,18 +92,18 @@ public class JorgPerformer {
             }
         }
 
-        return solution.keys(Xray.class).cascade();
+        return solution.keys(ObjectXray.class).cascade();
     }
 
-    private Xray directImage(Object o) {
+    private ObjectXray directImage(Object o) {
         Subject sub = ports.get(o);
         if(sub.settled()) return sub.asExpected();
-        if(o == null) return Xray.image(null);
-        if(o instanceof Class) return Xray.image(new Reference(((Class<?>) o).getName()));
+        if(o == null) return ObjectXray.image(null);
+        if(o instanceof Class) return ObjectXray.image(new Reference(((Class<?>) o).getName()));
         if(o instanceof Boolean || o instanceof Character || o instanceof Byte || o instanceof Short ||
                 o instanceof Integer || o instanceof Long || o instanceof Float || o instanceof Double ||
                 o instanceof String || o instanceof Suite.AutoKey || o == Jorg.terminator) {
-            return Xray.image(o);
+            return ObjectXray.image(o);
         }
         return null;
     }
@@ -111,24 +111,24 @@ public class JorgPerformer {
     private Subject subjectImage(Subject subject) {
         Subject sub = Suite.set();
         for (var s : subject) {
-            Xray keyXray = directImage(s.key().direct());
+            ObjectXray keyXray = directImage(s.key().direct());
             if (keyXray == null) {
-                Subject s1 = solution.get(Xray.image(s.key().direct()));
+                Subject s1 = solution.get(ObjectXray.image(s.key().direct()));
                 if (s1.settled()) {
                     keyXray = s1.asExpected();
                 } else {
-                    keyXray = new Xray("" + ++automaticIndex, s.key().direct());
+                    keyXray = new ObjectXray("" + ++automaticIndex, s.key().direct());
                     solution.set(keyXray);
                 }
             }
 
-            Xray valueXray = directImage(s.direct());
+            ObjectXray valueXray = directImage(s.direct());
             if (valueXray == null) {
-                Subject s1 = solution.get(Xray.image(s.direct()));
+                Subject s1 = solution.get(ObjectXray.image(s.direct()));
                 if (s1.settled()) {
                     valueXray = s1.asExpected();
                 } else {
-                    valueXray = new Xray("" + ++automaticIndex, s.direct());
+                    valueXray = new ObjectXray("" + ++automaticIndex, s.direct());
                     solution.set(valueXray);
                 }
             }
@@ -139,7 +139,7 @@ public class JorgPerformer {
 
     private Subject arrayImage(Object o) {
         Class<?> type = o.getClass().getComponentType();
-        Xray typeXray = directImage(type);
+        ObjectXray typeXray = directImage(type);
         if(typeXray == null) return null;
         Subject s = addXray(Suite.set(), typeXray);
 
@@ -192,13 +192,13 @@ public class JorgPerformer {
             addXray(s, directImage(a.length));
             addXray(s, directImage(Jorg.terminator));
             for(var i : a) {
-                Xray x = directImage(i);
+                ObjectXray x = directImage(i);
                 if (x == null) {
-                    Subject sub = solution.get(Xray.image(i));
+                    Subject sub = solution.get(ObjectXray.image(i));
                     if (sub.settled()) {
                         x = sub.asExpected();
                     } else {
-                        x = new Xray("" + ++automaticIndex, s.key().direct());
+                        x = new ObjectXray("" + ++automaticIndex, s.key().direct());
                         solution.set(x);
                     }
                 }
@@ -208,7 +208,7 @@ public class JorgPerformer {
         return s;
     }
 
-    private Subject addXray(Subject s, Xray x) {
-        return s.set(Xray.image(new Suite.AutoKey()), x);
+    private Subject addXray(Subject s, ObjectXray x) {
+        return s.set(ObjectXray.image(new Suite.AutoKey()), x);
     }*/
 }

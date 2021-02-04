@@ -12,8 +12,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.function.BiConsumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class ObjectFactory {
 
@@ -42,16 +40,14 @@ public class ObjectFactory {
     public FactoryVendor load(Subject $root) {
         $refs = Suite.set();
         $inferredTypes = Suite.set();
-        for(var $1 : Suite.dfs($root)) {
+        for(var $1 : Suite.postDfs(Suite.add($root)).eachIn()) {
             var $h = $1.take("#");
-            if($h.present()) {
-                $inferredTypes.set($1, inferType($h));
-                for(var $ : $1) {
-                    var str = $.as(String.class, "");
-                    if(str.startsWith("@")) {
-                        $refs.set(str.substring(1), $.in().get());
-                        $1.unset(str);
-                    }
+            if($h.present()) $inferredTypes.set($1, inferType($h.in().get()));
+            for(var $ : $1) {
+                var str = $.as(String.class, "");
+                if(str.startsWith("@") && $.in().present()) {
+                    $refs.set(str.substring(1), $.in().get());
+                    $1.unset(str);
                 }
             }
         }
@@ -65,6 +61,10 @@ public class ObjectFactory {
         var $s = Suite.set();
         $backedRefs.set(ref, $s);
         $backed.in($s).set(param);
+    }
+
+    public void setType(String typeAlias, Class<?> type) {
+        $classAliases.in(typeAlias).set(type);
     }
 
     public void setConstructor(Class<?> type, Action constructor) {
@@ -118,15 +118,15 @@ public class ObjectFactory {
 
     Subject findReferred(Subject $) {
         do {
-            $ = $refs.in($.asExpected()).get();
+            String str = $.asExpected();
+            $ = $refs.in(str.substring(1)).get();
         } while (isReference($));
         return $;
     }
 
     Subject inferType(Subject $) {
-        var $type = $.take("#").in().get();
-        if($type.is(String.class)) {
-            String type = $type.asExpected();
+        if($.is(String.class)) {
+            String type = $.asExpected();
             if($classAliases.in(type).is(Class.class))
                 return $classAliases.in(type).get();
             else try {
@@ -185,7 +185,7 @@ public class ObjectFactory {
                     return Suite.set(reformable);
                 } catch (NoSuchMethodException | IllegalAccessException |
                         InstantiationException | InvocationTargetException ignored) {
-                    ignored.printStackTrace();
+                    System.err.println("Can't create object. Check access modifiers");
                 }
             }
         }
@@ -203,21 +203,7 @@ public class ObjectFactory {
     }
 
     FactoryVendor prepare(Subject $sub) {
-        for(var $ : $sub) {
-            String str = $.as(String.class, null);
-            if(str != null) {
-                if(str.startsWith("#")) {
-                    $sub.shift(str, getDirect(str.substring(1)));
-                }
-            }
-        }
+        if(isReference($sub)) $sub = findReferred($sub);
         return new FactoryVendor(this, $sub);
     }
-
-    Object getDirect(String ref) {
-        return get(findReferred(Suite.set(ref)), Object.class).direct();
-    }
-
-
-
 }
