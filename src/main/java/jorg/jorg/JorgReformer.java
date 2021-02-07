@@ -82,7 +82,7 @@ public class JorgReformer {
         }
     }
 
-    protected void construct(Xkey xkey) throws JorgReadException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+    protected void compose(Xkey xkey) throws JorgReadException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         if(xkey.isConstructed())return;
         Object o;
 
@@ -106,11 +106,11 @@ public class JorgReformer {
                     Xkey key = s.key().asExpected();
                     image.take(key);
                     if(key.isUnderConstruction()) throw new JorgReadException("Construction loop");
-                    if(!key.isConstructed()) construct(key);
+                    if(!key.isConstructed()) compose(key);
                     if(key.getObject() == terminator) break;
                     Xkey value = s.asExpected();
                     if(value.isUnderConstruction()) throw new JorgReadException("Construction loop");
-                    if(!value.isConstructed()) construct(value);
+                    if(!value.isConstructed()) compose(value);
                     if(value.getObject() == terminator) break;
                     params.set(key.getObject(), value.getObject());
                 }

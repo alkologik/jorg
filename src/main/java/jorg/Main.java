@@ -2,13 +2,12 @@ package jorg;
 
 import jorg.jorg.*;
 import suite.suite.Subject;
+import suite.suite.Suite;
 
 public class Main {
 
     public static class Foo implements Interpreted, Discovered {
         int a;
-        int b;
-        String str = "@^^";
         Foo foo = null;
 
         public Foo() {
@@ -16,12 +15,10 @@ public class Main {
 
         public Foo(int a, int b) {
             this.a = a;
-            this.b = b;
         }
 
         public Foo(int a, int b, Foo foo) {
             this.a = a;
-            this.b = b;
             this.foo = foo;
         }
 
@@ -29,17 +26,25 @@ public class Main {
         public String toString() {
             return super.toString() + "{" +
                     "a=" + a +
-                    ", b=" + b +
                     '}';
         }
     }
 
     public static void main(String[] args) throws ClassNotFoundException {
-        BracketTreeWriter writer = new BracketTreeWriter();
-        System.out.println(writer.encode(new Foo(1,2, new Foo(3, 4)))); //TODO czemu @null na a i b w wewnetrznym foo ?
+        Foo foo = new Foo(1,2, new Foo(3, 4));
+        foo.foo.foo = foo;
+        String bt = BracketTree.writer().encode(foo);
+        System.out.println(bt);
         BracketTreeReader reader = new BracketTreeReader();
-        reader.getFactory().setType("foo", Foo.class);
-        var $ = reader.parse("a[[@a][d]] b[x[[@a]]] @a[#[foo]a[1]b[2]]").as(Subject.class);
+        var $ = reader.parse(bt);
+        var $1 = $.as(Subject.class).print();
+        System.out.println($1.direct());
+        System.out.println($1.in().direct());
+//        var $1 = $.as(Foo.class);
+//        System.out.println($1);
+//        System.out.println($1.foo);
+//        System.out.println($1.foo.foo);
+//        $1.print();
 
     }
 }

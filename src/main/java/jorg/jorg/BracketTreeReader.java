@@ -9,6 +9,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 public class BracketTreeReader {
 
@@ -49,18 +50,28 @@ public class BracketTreeReader {
         this.factory = factory;
     }
 
-    public BracketTreeReader withRecipe(Class<?> type, Action recipe) {
-        factory.setConstructor(type, recipe);
+    public BracketTreeReader withComposer(Class<?> type, Action recipe) {
+        factory.setComposer(type, recipe);
         return this;
     }
 
-    public<T> BracketTreeReader withRecipe(Class<T> type, BiConsumer<Subject, ObjectFactory> recipe) {
-        factory.setConstructor(type, recipe);
+    public<T> BracketTreeReader withComposer(Class<T> type, BiConsumer<Subject, ObjectFactory> recipe) {
+        factory.setComposer(type, recipe);
         return this;
     }
 
-    public BracketTreeReader withParam(String ref, Object o) {
-        factory.setParam(ref, o);
+    public BracketTreeReader withComposition(String reference, Object composition) {
+        factory.setComposition(reference, composition);
+        return this;
+    }
+
+    public BracketTreeReader withElementaryComposer(Function<String, Subject> composer) {
+        factory.setElementaryComposer(composer);
+        return this;
+    }
+
+    public BracketTreeReader withAlias(Class<?> aClass, String alias) {
+        this.factory.setClassAlias(alias, aClass);
         return this;
     }
 

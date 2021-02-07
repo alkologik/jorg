@@ -1,5 +1,6 @@
 package jorg.jorg;
 
+import suite.suite.Subject;
 import suite.suite.Suite;
 import suite.suite.action.Action;
 
@@ -7,6 +8,7 @@ import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
+import java.util.function.Function;
 
 public class BracketTreeWriter {
 
@@ -72,8 +74,55 @@ public class BracketTreeWriter {
         this.designer = designer;
     }
 
-    public<T> BracketTreeWriter withDecomposer(Class<T> type, Action decomposer) {
+    public int getExtendSign() {
+        return extendSign;
+    }
+
+    public void setExtendSign(int extendSign) {
+        this.extendSign = extendSign;
+    }
+
+    public int getCloseSign() {
+        return closeSign;
+    }
+
+    public void setCloseSign(int closeSign) {
+        this.closeSign = closeSign;
+    }
+
+    public int getFenceSign() {
+        return fenceSign;
+    }
+
+    public void setFenceSign(int fenceSign) {
+        this.fenceSign = fenceSign;
+    }
+
+    public BracketTreeWriter withDecomposer(Class<?> type, Action decomposer) {
         this.designer.setDecomposer(type, decomposer);
+        return this;
+    }
+
+    public BracketTreeWriter withDecomposition(Object o, Subject $decomposition) {
+        this.designer.setDecomposition(o, $decomposition);
+        return this;
+    }
+
+    public BracketTreeWriter withElementaryDecomposer(Function<Object, Subject> decomposer) {
+        this.designer.setElementaryDecomposer(decomposer);
+        return this;
+    }
+
+    public BracketTreeWriter withAlias(Class<?> aClass, String alias) {
+        this.designer.setClassAlias(aClass, alias);
+        return this;
+    }
+
+    public BracketTreeWriter with(Subject $params) {
+        if($params.present("root")) root = $params.in("root").as(Boolean.class, true);
+        if($params.present("compact")) compact = $params.in("compact").as(Boolean.class, true);
+        if($params.present("attachingTypes"))
+            designer.setAttachingTypes($params.in("attachingTypes").as(Boolean.class, true));
         return this;
     }
 
@@ -146,12 +195,11 @@ public class BracketTreeWriter {
         output.close();
     }
 
-    private String stringify(Object object) {
-        TreeDesigner.Xray x = (TreeDesigner.Xray)object;
-        return x.escaped() ? escaped(x.toString()) : x.toString();
+    public String stringify(Object object) {
+        return ((TreeDesigner.Xray)object).toString(this);
     }
 
-    private String escaped(String str) {
+    public String escaped(String str) {
         if(str.startsWith("@") || str.startsWith("#") || str.trim().length() < str.length() ||
                 str.contains("" + extendSign) || str.contains("" + closeSign)) {
             int i = 0;

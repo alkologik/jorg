@@ -9,6 +9,7 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 public class StandardInterpreter {
@@ -44,8 +45,15 @@ public class StandardInterpreter {
     }
 
     public static Subject interpretPrimitive(Subject $in) {
-        return Suite.set($in.direct().toString());
+        return Suite.set(Objects.toString($in.direct()));
     }
+
+//    public static void interpretPrimitive(Object o, TreeDesigner designer) {
+//        var $ = Suite.set();
+//        if(designer.isAttachingTypes()) designer.attachType($, o.getClass());
+//        $.set(new TreeDesigner.StringXray(o.toString()));
+//        designer.setDecomposition(o, Suite.set(new TreeDesigner.PrimitiveXray($)));
+//    }
 
     public static Subject interpretCollection(Subject $in) {
         Collection<?> collection = $in.asExpected();
@@ -57,14 +65,12 @@ public class StandardInterpreter {
     public static Subject interpretMap(Subject $in) {
         Map<?, ?> map = $in.asExpected();
         var $ = Suite.set();
-        map.forEach((key, value) -> $.in().set(key).set(value));
+        map.forEach((key, value) -> $.in(key).set(value));
         return $;
     }
 
     public static Subject interpretSubject(Subject $in) {
-        var $ = Suite.set();
-        $in.forEach($i -> $.in().set($i.direct()).set($i.in().get()));
-        return $;
+        return $in.asExpected();
     }
 
     public static Subject interpretFile(Subject $in) {
